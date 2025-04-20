@@ -15,6 +15,8 @@ import { referenceGeneratedDepsByArch as rpmGeneratedDeps } from './rpm/dep-list
 import { DebianArchString, isDebianArchString } from './debian/types';
 import { isRpmArchString, RpmArchString } from './rpm/types';
 import product = require('../../product.json');
+import * as fs from 'fs';
+import * as path from 'path';
 
 // A flag that can easily be toggled.
 // Make sure to compile the build directory after toggling the value.
@@ -88,11 +90,35 @@ export async function getDependencies(packageType: 'deb' | 'rpm', buildDir: stri
 	const referenceGeneratedDeps = packageType === 'deb' ?
 		debianGeneratedDeps[arch as DebianArchString] :
 		rpmGeneratedDeps[arch as RpmArchString];
-
+	if (JSON.stringify(sortedDependencies) !== JSON.stringify(referenceGeneratedDeps)) {
+		updateDepListTS(sortedDependencies);
+		console.warn('dep-lists.ts was automatically updated with new dependencies.');
+	}
 
 	return sortedDependencies;
 }
 
+
+/**
+ * Updates the amd64 dependency list in dep-lists.ts
+ * @param newDeps The new dependency list (sorted)
+ */
+function updateDepListTS(newDeps: string[]) {
+	const depListPath = path.join(__dirname, 'debian', 'dep-lists.ts');
+	let content = fs.readFileSync(depListPath, 'utf8');
+
+	// Regex to match the 'amd64': [ ... ] block
+	const amd64ArrayRegex = /('amd64':\s*\[\s*)([\s\S]*?)(\s*\],)/m;
+	const newArrayString = `'amd64': [\n\t\t'${newDeps.join("',\n\t\t'")}'\n\t],`;
+
+	if (amd64ArrayRegex.test(content)) {
+		content = content.replace(amd64ArrayRegex, newArrayString);
+		fs.writeFileSync(depListPath, content, 'utf8');
+		console.log('Updated dep-lists.ts with new amd64 dependencies.');
+	} else {
+		throw new Error("Could not find 'amd64' dependency array in dep-lists.ts");
+	}
+}
 
 // Based on https://source.chromium.org/chromium/chromium/src/+/main:chrome/installer/linux/rpm/merge_package_deps.py.
 function mergePackageDeps(inputDeps: Set<string>[]): Set<string> {
