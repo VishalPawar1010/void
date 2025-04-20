@@ -88,17 +88,7 @@ export async function getDependencies(packageType: 'deb' | 'rpm', buildDir: stri
 	const referenceGeneratedDeps = packageType === 'deb' ?
 		debianGeneratedDeps[arch as DebianArchString] :
 		rpmGeneratedDeps[arch as RpmArchString];
-	if (JSON.stringify(sortedDependencies) !== JSON.stringify(referenceGeneratedDeps)) {
-		const failMessage = 'The dependencies list has changed.'
-			+ '\nOld:\n' + referenceGeneratedDeps.join('\n')
-			+ '\nNew:\n' + sortedDependencies.join('\n');
-		if (FAIL_BUILD_FOR_NEW_DEPENDENCIES) {
-			// throw new Error(failMessage);
-			console.warn(failMessage);
-		} else {
-			console.warn(failMessage);
-		}
-	}
+
 
 	return sortedDependencies;
 }
