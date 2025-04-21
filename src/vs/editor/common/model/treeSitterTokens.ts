@@ -56,9 +56,9 @@ export class TreeSitterTokens extends AbstractTokens {
 
 	public getLineTokens(lineNumber: number): LineTokens {
 		const content = this._textModel.getLineContent(lineNumber);
-		if (this._tokenizationSupport && content.length > 0) {
+		if (this._tokenizationSupport) {
 			const rawTokens = this._tokenStore.getTokens(this._textModel, lineNumber);
-			if (rawTokens && rawTokens.length > 0) {
+			if (rawTokens) {
 				return new LineTokens(rawTokens, content, this._languageIdCodec);
 			}
 		}
@@ -88,13 +88,11 @@ export class TreeSitterTokens extends AbstractTokens {
 		if (e.isFlush) {
 			// Don't fire the event, as the view might not have got the text change event yet
 			this.resetTokenization(false);
-		} else {
-			this._tokenStore.handleContentChanged(this._textModel, e);
 		}
 	}
 
 	public override forceTokenization(lineNumber: number): void {
-		if (this._tokenizationSupport && !this.hasAccurateTokensForLine(lineNumber)) {
+		if (this._tokenizationSupport) {
 			this._tokenizationSupport.tokenizeEncoded(lineNumber, this._textModel);
 		}
 	}
@@ -112,21 +110,10 @@ export class TreeSitterTokens extends AbstractTokens {
 		// TODO @alexr00 implement once we have custom parsing and don't just feed in the whole text model value
 		return StandardTokenType.Other;
 	}
-
 	public override tokenizeLinesAt(lineNumber: number, lines: string[]): LineTokens[] | null {
-		if (this._tokenizationSupport) {
-			const rawLineTokens = this._tokenizationSupport.guessTokensForLinesContent(lineNumber, this._textModel, lines);
-			const lineTokens: LineTokens[] = [];
-			if (rawLineTokens) {
-				for (let i = 0; i < rawLineTokens.length; i++) {
-					lineTokens.push(new LineTokens(rawLineTokens[i], lines[i], this._languageIdCodec));
-				}
-				return lineTokens;
-			}
-		}
+		// TODO @alexr00 understand what this is for and implement
 		return null;
 	}
-
 	public override get hasTokens(): boolean {
 		return this._tokenStore.hasTokens(this._textModel);
 	}

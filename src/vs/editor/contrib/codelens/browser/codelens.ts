@@ -22,8 +22,6 @@ export interface CodeLensItem {
 
 export class CodeLensModel {
 
-	static readonly Empty = new CodeLensModel();
-
 	lenses: CodeLensItem[] = [];
 
 	private _store: DisposableStore | undefined;
@@ -68,11 +66,6 @@ export async function getCodeLensModel(registry: LanguageFeatureRegistry<CodeLen
 	});
 
 	await Promise.all(promises);
-
-	if (token.isCancellationRequested) {
-		result.dispose();
-		return CodeLensModel.Empty;
-	}
 
 	result.lenses = result.lenses.sort((a, b) => {
 		// sort by lineNumber, provider-rank, and column

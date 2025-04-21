@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { promises } from 'fs';
+import * as fs from 'fs';
 import { RunOnceScheduler } from '../../../../base/common/async.js';
 import { onUnexpectedError } from '../../../../base/common/errors.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
@@ -14,18 +14,16 @@ import { IProductService } from '../../../../platform/product/common/productServ
 
 export class CodeCacheCleaner extends Disposable {
 
-	private readonly dataMaxAge: number;
+	private readonly _DataMaxAge = this.productService.quality !== 'stable'
+		? 1000 * 60 * 60 * 24 * 7 		// roughly 1 week (insiders)
+		: 1000 * 60 * 60 * 24 * 30 * 3; // roughly 3 months (stable)
 
 	constructor(
 		currentCodeCachePath: string | undefined,
-		@IProductService productService: IProductService,
+		@IProductService private readonly productService: IProductService,
 		@ILogService private readonly logService: ILogService
 	) {
 		super();
-
-		this.dataMaxAge = productService.quality !== 'stable'
-			? 1000 * 60 * 60 * 24 * 7 		// roughly 1 week (insiders)
-			: 1000 * 60 * 60 * 24 * 30 * 3; // roughly 3 months (stable)
 
 		// Cached data is stored as user data and we run a cleanup task every time
 		// the editor starts. The strategy is to delete all files that are older than
@@ -57,8 +55,8 @@ export class CodeCacheCleaner extends Disposable {
 
 				// Delete cache folder if old enough
 				const codeCacheEntryPath = join(codeCacheRootPath, codeCache);
-				const codeCacheEntryStat = await promises.stat(codeCacheEntryPath);
-				if (codeCacheEntryStat.isDirectory() && (now - codeCacheEntryStat.mtime.getTime()) > this.dataMaxAge) {
+				const codeCacheEntryStat = await fs.promises.stat(codeCacheEntryPath);
+				if (codeCacheEntryStat.isDirectory() && (now - codeCacheEntryStat.mtime.getTime()) > this._DataMaxAge) {
 					this.logService.trace(`[code cache cleanup]: Removing code cache folder ${codeCache}.`);
 
 					return Promises.rm(codeCacheEntryPath);

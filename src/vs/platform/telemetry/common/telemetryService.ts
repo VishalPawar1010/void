@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { DisposableStore } from '../../../base/common/lifecycle.js';
-import { mixin } from '../../../base/common/objects.js';
+// import { mixin } from '../../../base/common/objects.js';
 import { isWeb } from '../../../base/common/platform.js';
 import { escapeRegExpCharacters } from '../../../base/common/strings.js';
 import { localize } from '../../../nls.js';
@@ -15,7 +15,7 @@ import { IProductService } from '../../product/common/productService.js';
 import { Registry } from '../../registry/common/platform.js';
 import { ClassifiedEvent, IGDPRProperty, OmitMetadata, StrictPropertyCheck } from './gdprTypings.js';
 import { ITelemetryData, ITelemetryService, TelemetryConfiguration, TelemetryLevel, TELEMETRY_CRASH_REPORTER_SETTING_ID, TELEMETRY_OLD_SETTING_ID, TELEMETRY_SECTION_ID, TELEMETRY_SETTING_ID, ICommonProperties } from './telemetry.js';
-import { cleanData, getTelemetryLevel, ITelemetryAppender } from './telemetryUtils.js';
+import { /*cleanData,*/ getTelemetryLevel, ITelemetryAppender } from './telemetryUtils.js';
 
 export interface ITelemetryServiceConfig {
 	appenders: ITelemetryAppender[];
@@ -38,7 +38,8 @@ export class TelemetryService implements ITelemetryService {
 	readonly firstSessionDate: string;
 	readonly msftInternal: boolean | undefined;
 
-	private _appenders: ITelemetryAppender[];
+	// Void commented this out (no longer used)
+	// private _appenders: ITelemetryAppender[];
 	private _commonProperties: ICommonProperties;
 	private _experimentProperties: { [name: string]: string } = {};
 	private _piiPaths: string[];
@@ -53,7 +54,8 @@ export class TelemetryService implements ITelemetryService {
 		@IConfigurationService private _configurationService: IConfigurationService,
 		@IProductService private _productService: IProductService
 	) {
-		this._appenders = config.appenders;
+		// Void commented this out (no longer used)
+		// this._appenders = config.appenders;
 		this._commonProperties = config.commonProperties ?? Object.create(null);
 
 		this.sessionId = this._commonProperties['sessionID'] as string;
@@ -121,44 +123,49 @@ export class TelemetryService implements ITelemetryService {
 		this._disposables.dispose();
 	}
 
-	private _log(eventName: string, eventLevel: TelemetryLevel, data?: ITelemetryData) {
-		// don't send events when the user is optout
-		if (this._telemetryLevel < eventLevel) {
-			return;
-		}
+	// Void commented this out
+	// private _log(eventName: string, eventLevel: TelemetryLevel, data?: ITelemetryData) {
+	// 	// don't send events when the user is optout
+	// 	if (this._telemetryLevel < eventLevel) {
+	// 		return;
+	// 	}
 
-		// add experiment properties
-		data = mixin(data, this._experimentProperties);
+	// 	// add experiment properties
+	// 	data = mixin(data, this._experimentProperties);
 
-		// remove all PII from data
-		data = cleanData(data as Record<string, any>, this._cleanupPatterns);
+	// 	// remove all PII from data
+	// 	data = cleanData(data as Record<string, any>, this._cleanupPatterns);
 
-		// add common properties
-		data = mixin(data, this._commonProperties);
+	// 	// add common properties
+	// 	data = mixin(data, this._commonProperties);
 
-		// Log to the appenders of sufficient level
-		this._appenders.forEach(a => a.log(eventName, data));
-	}
+	// 	// Log to the appenders of sufficient level
+	// 	this._appenders.forEach(a => a.log(eventName, data));
+	// }
 
 	publicLog(eventName: string, data?: ITelemetryData) {
-		this._log(eventName, TelemetryLevel.USAGE, data);
+		// Void commented this out
+		// this._log(eventName, TelemetryLevel.USAGE, data);
 	}
 
 	publicLog2<E extends ClassifiedEvent<OmitMetadata<T>> = never, T extends IGDPRProperty = never>(eventName: string, data?: StrictPropertyCheck<T, E>) {
-		this.publicLog(eventName, data as ITelemetryData);
+		// Void commented this out
+		// this.publicLog(eventName, data as ITelemetryData);
 	}
 
 	publicLogError(errorEventName: string, data?: ITelemetryData) {
-		if (!this._sendErrorTelemetry) {
-			return;
-		}
+		// Void commented this out
+		// if (!this._sendErrorTelemetry) {
+		// 	return;
+		// }
 
-		// Send error event and anonymize paths
-		this._log(errorEventName, TelemetryLevel.ERROR, data);
+		// // Send error event and anonymize paths
+		// this._log(errorEventName, TelemetryLevel.ERROR, data);
 	}
 
 	publicLogError2<E extends ClassifiedEvent<OmitMetadata<T>> = never, T extends IGDPRProperty = never>(eventName: string, data?: StrictPropertyCheck<T, E>) {
-		this.publicLogError(eventName, data as ITelemetryData);
+		// Void commented this out
+		// this.publicLogError(eventName, data as ITelemetryData);
 	}
 }
 
@@ -176,11 +183,11 @@ function getTelemetryLevelSettingDescription(): string {
 	const telemetryTableDescription = localize('telemetry.telemetryLevel.tableDescription', "The following table outlines the data sent with each setting:");
 	const telemetryTable = `
 |       | ${crashReportsHeader} | ${errorsHeader} | ${usageHeader} |
-|:------|:-------------:|:---------------:|:----------:|
-| all   |       ✓       |        ✓        |     ✓      |
-| error |       ✓       |        ✓        |     -      |
-| crash |       ✓       |        -        |     -      |
-| off   |       -       |        -        |     -      |
+|:------|:---------------------:|:---------------:|:--------------:|
+| all   |            ✓          |        ✓        |        ✓       |
+| error |            ✓          |        ✓        |        -       |
+| crash |            ✓          |        -        |        -       |
+| off   |            -          |        -        |        -       |
 `;
 
 	const deprecatedSettingNote = localize('telemetry.telemetryLevel.deprecated', "****Note:*** If this setting is 'off', no telemetry will be sent regardless of other telemetry settings. If this setting is set to anything except 'off' and telemetry is disabled with deprecated settings, no telemetry will be sent.*");
@@ -200,8 +207,7 @@ ${deprecatedSettingNote}
 	return telemetryDescription;
 }
 
-const configurationRegistry = Registry.as<IConfigurationRegistry>(Extensions.Configuration);
-configurationRegistry.registerConfiguration({
+Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration({
 	'id': TELEMETRY_SECTION_ID,
 	'order': 1,
 	'type': 'object',
@@ -220,23 +226,18 @@ configurationRegistry.registerConfiguration({
 			'default': TelemetryConfiguration.ON,
 			'restricted': true,
 			'scope': ConfigurationScope.APPLICATION,
-			'tags': ['usesOnlineServices', 'telemetry'],
-			'policy': {
-				name: 'TelemetryLevel',
-				minimumVersion: '1.99',
-				description: localize('telemetry.telemetryLevel.policyDescription', "Controls the level of telemetry."),
-			}
-		},
-		'telemetry.feedback.enabled': {
-			type: 'boolean',
-			default: true,
-			description: localize('telemetry.feedback.enabled', "Enable feedback mechanisms such as the issue reporter, surveys, and feedback options in features like Copilot Chat."),
-			policy: {
-				name: 'EnableFeedback',
-				minimumVersion: '1.99',
-			}
-		},
-		// Deprecated telemetry setting
+			'tags': ['usesOnlineServices', 'telemetry']
+		}
+	}
+});
+
+// Deprecated telemetry setting
+Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration({
+	'id': TELEMETRY_SECTION_ID,
+	'order': 110,
+	'type': 'object',
+	'title': localize('telemetryConfigurationTitle', "Telemetry"),
+	'properties': {
 		[TELEMETRY_OLD_SETTING_ID]: {
 			'type': 'boolean',
 			'markdownDescription':
@@ -249,5 +250,6 @@ configurationRegistry.registerConfiguration({
 			'scope': ConfigurationScope.APPLICATION,
 			'tags': ['usesOnlineServices', 'telemetry']
 		}
-	},
+	}
 });
+

@@ -84,7 +84,7 @@ export class NotebookCellListDelegate extends Disposable implements IListVirtual
 	}
 }
 
-abstract class AbstractCellRenderer extends Disposable {
+abstract class AbstractCellRenderer {
 	protected readonly editorOptions: CellEditorOptions;
 
 	constructor(
@@ -99,12 +99,11 @@ abstract class AbstractCellRenderer extends Disposable {
 		language: string,
 		protected dndController: CellDragAndDropController | undefined
 	) {
-		super();
-		this.editorOptions = this._register(new CellEditorOptions(this.notebookEditor.getBaseCellEditorOptions(language), this.notebookEditor.notebookOptions, configurationService));
+		this.editorOptions = new CellEditorOptions(this.notebookEditor.getBaseCellEditorOptions(language), this.notebookEditor.notebookOptions, configurationService);
 	}
 
-	override dispose() {
-		super.dispose();
+	dispose() {
+		this.editorOptions.dispose();
 		this.dndController = undefined;
 	}
 }
@@ -200,7 +199,7 @@ export class MarkupCellRenderer extends AbstractCellRenderer implements IListRen
 			editorContainer,
 			foldingIndicator,
 			templateDisposables,
-			elementDisposables: templateDisposables.add(new DisposableStore()),
+			elementDisposables: new DisposableStore(),
 			cellParts,
 			toJSON: () => { return {}; }
 		};
@@ -226,6 +225,7 @@ export class MarkupCellRenderer extends AbstractCellRenderer implements IListRen
 	}
 
 	disposeTemplate(templateData: MarkdownCellRenderTemplate): void {
+		templateData.elementDisposables.dispose();
 		templateData.templateDisposables.dispose();
 	}
 
@@ -366,7 +366,7 @@ export class CodeCellRenderer extends AbstractCellRenderer implements IListRende
 			outputShowMoreContainer,
 			editor,
 			templateDisposables,
-			elementDisposables: templateDisposables.add(new DisposableStore()),
+			elementDisposables: new DisposableStore(),
 			cellParts,
 			toJSON: () => { return {}; }
 		};
@@ -397,7 +397,7 @@ export class CodeCellRenderer extends AbstractCellRenderer implements IListRende
 	}
 
 	disposeTemplate(templateData: CodeCellRenderTemplate): void {
-		templateData.templateDisposables.dispose();
+		templateData.templateDisposables.clear();
 	}
 
 	disposeElement(element: ICellViewModel, index: number, templateData: CodeCellRenderTemplate, height: number | undefined): void {

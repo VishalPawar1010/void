@@ -21,6 +21,7 @@
     "contribSourceControlInputBoxMenu",
     "contribSourceControlTitleMenu",
     "contribViewsWelcome",
+    "diffCommand",
     "editSessionIdentityProvider",
     "quickDiffProvider",
     "quickInputButtonLocation",
@@ -34,6 +35,7 @@
     "statusBarItemTooltip",
     "tabInputMultiDiff",
     "tabInputTextMerge",
+    "textDocumentEncoding",
     "textEditorDiffInformation",
     "timeline"
   ],
@@ -249,13 +251,6 @@
         "command": "git.unstageSelectedRanges",
         "title": "%command.unstageSelectedRanges%",
         "category": "Git",
-        "enablement": "!operationInProgress"
-      },
-      {
-        "command": "git.unstageChange",
-        "title": "%command.unstageChange%",
-        "category": "Git",
-        "icon": "$(remove)",
         "enablement": "!operationInProgress"
       },
       {
@@ -977,7 +972,7 @@
         "command": "git.unstageSelectedRanges",
         "key": "ctrl+k ctrl+n",
         "mac": "cmd+k cmd+n",
-        "when": "editorTextFocus && isInDiffEditor && isInDiffRightEditor && (resourceScheme == file || resourceScheme == git)"
+        "when": "editorTextFocus && isInDiffEditor && isInDiffRightEditor && resourceScheme == git"
       },
       {
         "command": "git.revertSelectedRanges",
@@ -1082,11 +1077,7 @@
         },
         {
           "command": "git.unstageSelectedRanges",
-          "when": "config.git.enabled && !git.missing && gitOpenRepositoryCount != 0 && (resourceScheme == file || resourceScheme == git)"
-        },
-        {
-          "command": "git.unstageChange",
-          "when": "false"
+          "when": "config.git.enabled && !git.missing && gitOpenRepositoryCount != 0 && resourceScheme == git"
         },
         {
           "command": "git.clean",
@@ -2230,15 +2221,11 @@
       "scm/change/title": [
         {
           "command": "git.stageChange",
-          "when": "config.git.enabled && !git.missing && originalResource =~ /^git\\:.*%22ref%22%3A%22%22%7D$/"
+          "when": "config.git.enabled && !git.missing && originalResourceScheme == git"
         },
         {
           "command": "git.revertChange",
-          "when": "config.git.enabled && !git.missing && originalResource =~ /^git\\:.*%22ref%22%3A%22%22%7D$/"
-        },
-        {
-          "command": "git.unstageChange",
-          "when": "config.git.enabled && !git.missing && originalResource =~ /^git\\:.*%22ref%22%3A%22HEAD%22%7D$/"
+          "when": "config.git.enabled && !git.missing && originalResourceScheme == git"
         }
       ],
       "timeline/item/context": [
@@ -3312,13 +3299,13 @@
           "markdownDescription": "%config.commitShortHashLength%",
           "scope": "resource"
         },
-        "git.diagnosticsCommitHook.enabled": {
+        "git.diagnosticsCommitHook.Enabled": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "%config.diagnosticsCommitHook.enabled%",
+          "markdownDescription": "%config.diagnosticsCommitHook.Enabled%",
           "scope": "resource"
         },
-        "git.diagnosticsCommitHook.sources": {
+        "git.diagnosticsCommitHook.Sources": {
           "type": "object",
           "additionalProperties": {
             "type": "string",
@@ -3333,18 +3320,13 @@
           "default": {
             "*": "error"
           },
-          "markdownDescription": "%config.diagnosticsCommitHook.sources%",
+          "markdownDescription": "%config.diagnosticsCommitHook.Sources%",
           "scope": "resource"
         },
         "git.discardUntrackedChangesToTrash": {
           "type": "boolean",
           "default": true,
           "markdownDescription": "%config.discardUntrackedChangesToTrash%"
-        },
-        "git.showReferenceDetails": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.showReferenceDetails%"
         }
       }
     },
@@ -3453,10 +3435,10 @@
         "id": "git.blame.editorDecorationForeground",
         "description": "%colors.blameEditorDecoration%",
         "defaults": {
-          "dark": "editorInlayHint.foreground",
-          "light": "editorInlayHint.foreground",
-          "highContrast": "editorInlayHint.foreground",
-          "highContrastLight": "editorInlayHint.foreground"
+          "dark": "editorCodeLens.foreground",
+          "light": "editorCodeLens.foreground",
+          "highContrast": "editorCodeLens.foreground",
+          "highContrastLight": "editorCodeLens.foreground"
         }
       }
     ],
@@ -3582,6 +3564,7 @@
   "dependencies": {
     "@joaomoreno/unique-names-generator": "^5.2.0",
     "@vscode/extension-telemetry": "^0.9.8",
+    "@vscode/iconv-lite-umd": "0.7.0",
     "byline": "^5.0.0",
     "file-type": "16.5.4",
     "picomatch": "2.3.1",

@@ -319,10 +319,9 @@ globalThis._VSCODE_NLS_LANGUAGE=${JSON.stringify(language.id)};`),
 function processNlsFiles(opts) {
     return (0, event_stream_1.through)(function (file) {
         const fileName = path_1.default.basename(file.path);
-        if (fileName === 'nls.keys.json') {
+        if (fileName === 'bundleInfo.json') { // pick a root level file to put the core bundles (TODO@esm this file is not created anymore, pick another)
             try {
-                const contents = file.contents.toString('utf8');
-                const json = JSON.parse(contents);
+                const json = JSON.parse(fs_1.default.readFileSync(path_1.default.join(REPO_ROOT_PATH, opts.out, 'nls.keys.json')).toString());
                 if (NLSKeysFormat.is(json)) {
                     processCoreBundleFormat(file.base, opts.fileHeader, opts.languages, json, this);
                 }

@@ -10,7 +10,7 @@ import lsSpec from '../../../completions/upstream/ls';
 const allOptions = [
 	'-%',
 	'-,',
-	'--color <when>',
+	'--color',
 	'-1',
 	'-@',
 	'-A',

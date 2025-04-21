@@ -185,10 +185,6 @@ export class SingleTsServer extends Disposable implements ITypeScriptServer {
 
 	private tryCancelRequest(request: Proto.Request, command: string): boolean {
 		const seq = request.seq;
-		const callback = this._callbacks.peek(seq);
-		if (callback?.traceId !== undefined) {
-			this._telemetryReporter.logTraceEvent('TSServer.tryCancelRequest', callback.traceId, JSON.stringify({ command, cancelled: true }));
-		}
 		try {
 			if (this._requestQueue.tryDeletePendingRequest(seq)) {
 				this.logTrace(`Canceled request with sequence number ${seq}`);
@@ -210,9 +206,7 @@ export class SingleTsServer extends Disposable implements ITypeScriptServer {
 		if (!callback) {
 			return;
 		}
-		if (callback.traceId !== undefined) {
-			this._telemetryReporter.logTraceEvent('TSServerRequest.dispatchResponse', callback.traceId, JSON.stringify({ command: response.command, success: response.success, performanceData: response.performanceData }));
-		}
+
 		this._tracer.traceResponse(this._serverId, response, callback);
 		if (response.success) {
 			callback.onSuccess(response);
@@ -224,7 +218,7 @@ export class SingleTsServer extends Disposable implements ITypeScriptServer {
 		}
 	}
 
-	public executeImpl(command: keyof TypeScriptRequests, args: unknown, executeInfo: { isAsync: boolean; token?: vscode.CancellationToken; expectsResult: boolean; lowPriority?: boolean; executionTarget?: ExecutionTarget }): Array<Promise<ServerResponse.Response<Proto.Response>> | undefined> {
+	public executeImpl(command: keyof TypeScriptRequests, args: any, executeInfo: { isAsync: boolean; token?: vscode.CancellationToken; expectsResult: boolean; lowPriority?: boolean; executionTarget?: ExecutionTarget }): Array<Promise<ServerResponse.Response<Proto.Response>> | undefined> {
 		const request = this._requestQueue.createRequest(command, args);
 		const requestInfo: RequestItem = {
 			request,
@@ -235,7 +229,7 @@ export class SingleTsServer extends Disposable implements ITypeScriptServer {
 		let result: Promise<ServerResponse.Response<Proto.Response>> | undefined;
 		if (executeInfo.expectsResult) {
 			result = new Promise<ServerResponse.Response<Proto.Response>>((resolve, reject) => {
-				this._callbacks.add(request.seq, { onSuccess: resolve as () => ServerResponse.Response<Proto.Response> | undefined, onError: reject, queuingStartTime: Date.now(), isAsync: executeInfo.isAsync, traceId: request.arguments?.$traceId }, executeInfo.isAsync);
+				this._callbacks.add(request.seq, { onSuccess: resolve as () => ServerResponse.Response<Proto.Response> | undefined, onError: reject, queuingStartTime: Date.now(), isAsync: executeInfo.isAsync }, executeInfo.isAsync);
 
 				if (executeInfo.token) {
 
@@ -269,10 +263,6 @@ export class SingleTsServer extends Disposable implements ITypeScriptServer {
 		}
 
 		this._requestQueue.enqueue(requestInfo);
-		if (args && typeof (args as any).$traceId === 'string') {
-			const queueLength = this._requestQueue.length - 1;
-			this._telemetryReporter.logTraceEvent('TSServer.enqueueRequest', (args as any).$traceId, JSON.stringify({ command, queueLength }));
-		}
 		this.sendNextRequests();
 
 		return [result];
@@ -297,9 +287,6 @@ export class SingleTsServer extends Disposable implements ITypeScriptServer {
 
 		try {
 			this.write(serverRequest);
-			if (typeof serverRequest.arguments?.$traceId === 'string') {
-				this._telemetryReporter.logTraceEvent('TSServer.sendRequest', serverRequest.arguments.$traceId, JSON.stringify({ command: serverRequest.command }));
-			}
 		} catch (err) {
 			const callback = this.fetchCallback(serverRequest.seq);
 			callback?.onError(err);

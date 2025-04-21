@@ -280,7 +280,8 @@ export class ActivityBarCompositeBar extends PaneCompositeBar {
 			return; // prevent menu bar from installing twice #110720
 		}
 
-		this.menuBarContainer = $('.menubar');
+		this.menuBarContainer = document.createElement('div');
+		this.menuBarContainer.classList.add('menubar');
 
 		const content = assertIsDefined(this.element);
 		content.prepend(this.menuBarContainer);

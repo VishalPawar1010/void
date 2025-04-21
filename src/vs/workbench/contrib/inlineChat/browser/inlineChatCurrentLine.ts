@@ -27,7 +27,7 @@ import './media/inlineChat.css';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { InlineCompletionsController } from '../../../../editor/contrib/inlineCompletions/browser/controller/inlineCompletionsController.js';
-import { IChatAgentService } from '../../chat/common/chatAgents.js';
+import { ChatAgentLocation, IChatAgentService } from '../../chat/common/chatAgents.js';
 import { IMarkerDecorationsService } from '../../../../editor/common/services/markerDecorations.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { toAction } from '../../../../base/common/actions.js';
@@ -39,7 +39,6 @@ import { createStyleSheet2 } from '../../../../base/browser/domStylesheets.js';
 import { stringValue } from '../../../../base/browser/cssValue.js';
 import { observableConfigValue } from '../../../../platform/observable/common/platformObservableUtils.js';
 import { Emitter } from '../../../../base/common/event.js';
-import { ChatAgentLocation } from '../../chat/common/constants.js';
 
 export const CTX_INLINE_CHAT_SHOWING_HINT = new RawContextKey<boolean>('inlineChatShowingHint', false, localize('inlineChatShowingHint', "Whether inline chat shows a contextual hint"));
 
@@ -228,7 +227,7 @@ export class InlineChatHintsController extends Disposable implements IEditorCont
 			const ghostState = ghostCtrl?.model.read(r)?.state.read(r);
 
 			const textFocus = editorObs.isTextFocused.read(r);
-			let position = editorObs.cursorPosition.read(r);
+			const position = editorObs.cursorPosition.read(r);
 			const model = editorObs.model.read(r);
 
 			const kb = keyObs.read(r);
@@ -241,15 +240,11 @@ export class InlineChatHintsController extends Disposable implements IEditorCont
 				return undefined;
 			}
 
-
 			// DEBT - I cannot use `model.onDidChangeContent` directly here
 			// https://github.com/microsoft/vscode/issues/242059
 			const emitter = store.add(new Emitter<void>());
 			store.add(model.onDidChangeContent(() => emitter.fire()));
 			observableFromEvent(emitter.event, () => model.getVersionId()).read(r);
-
-			// position can be wrong
-			position = model.validatePosition(position);
 
 			const visible = this._visibilityObs.read(r);
 			const isEol = model.getLineMaxColumn(position.lineNumber) === position.column;

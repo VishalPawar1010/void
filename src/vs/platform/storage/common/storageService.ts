@@ -17,33 +17,24 @@ import { IAnyWorkspaceIdentifier } from '../../workspace/common/workspace.js';
 
 export class RemoteStorageService extends AbstractStorageService {
 
-	private readonly applicationStorageProfile: IUserDataProfile;
-	private readonly applicationStorage: IStorage;
+	private readonly applicationStorageProfile = this.initialProfiles.defaultProfile;
+	private readonly applicationStorage = this.createApplicationStorage();
 
-	private profileStorageProfile: IUserDataProfile;
+	private profileStorageProfile = this.initialProfiles.currentProfile;
 	private readonly profileStorageDisposables = this._register(new DisposableStore());
-	private profileStorage: IStorage;
+	private profileStorage = this.createProfileStorage(this.profileStorageProfile);
 
-	private workspaceStorageId: string | undefined;
+	private workspaceStorageId = this.initialWorkspace?.id;
 	private readonly workspaceStorageDisposables = this._register(new DisposableStore());
-	private workspaceStorage: IStorage | undefined;
+	private workspaceStorage = this.createWorkspaceStorage(this.initialWorkspace);
 
 	constructor(
-		initialWorkspace: IAnyWorkspaceIdentifier | undefined,
-		initialProfiles: { defaultProfile: IUserDataProfile; currentProfile: IUserDataProfile },
+		private readonly initialWorkspace: IAnyWorkspaceIdentifier | undefined,
+		private readonly initialProfiles: { defaultProfile: IUserDataProfile; currentProfile: IUserDataProfile },
 		private readonly remoteService: IRemoteService,
 		private readonly environmentService: IEnvironmentService
 	) {
 		super();
-
-		this.applicationStorageProfile = initialProfiles.defaultProfile;
-		this.applicationStorage = this.createApplicationStorage();
-
-		this.profileStorageProfile = initialProfiles.currentProfile;
-		this.profileStorage = this.createProfileStorage(this.profileStorageProfile);
-
-		this.workspaceStorageId = initialWorkspace?.id;
-		this.workspaceStorage = this.createWorkspaceStorage(initialWorkspace);
 	}
 
 	private createApplicationStorage(): IStorage {

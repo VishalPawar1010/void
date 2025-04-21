@@ -744,11 +744,10 @@ export class MemoryRegion extends Disposable implements IMemoryRegion {
 	public readonly onDidInvalidate = this.invalidateEmitter.event;
 
 	/** @inheritdoc */
-	public readonly writable: boolean;
+	public readonly writable = !!this.session.capabilities.supportsWriteMemoryRequest;
 
 	constructor(private readonly memoryReference: string, private readonly session: IDebugSession) {
 		super();
-		this.writable = !!this.session.capabilities.supportsWriteMemoryRequest;
 		this._register(session.onDidInvalidateMemory(e => {
 			if (e.body.memoryReference === memoryReference) {
 				this.invalidate(e.body.offset, e.body.count - e.body.offset);
@@ -1490,7 +1489,6 @@ export class DebugModel extends Disposable implements IDebugModel {
 			}
 			if (s.state === State.Inactive && s.configuration.name === session.configuration.name) {
 				// Make sure to remove all inactive sessions that are using the same configuration as the new session
-				s.dispose();
 				return false;
 			}
 

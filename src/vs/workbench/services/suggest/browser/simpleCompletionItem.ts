@@ -30,11 +30,6 @@ export interface ISimpleCompletion {
 	icon?: ThemeIcon;
 
 	/**
-	 * The completion item's kind that will be included in the aria label.
-	 */
-	kindLabel?: string;
-
-	/**
 	 * The completion's detail which appears on the right of the list.
 	 */
 	detail?: string;

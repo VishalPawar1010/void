@@ -40,7 +40,6 @@ import { ViewsSubMenu } from './views/viewPaneContainer.js';
 import { getActionBarActions } from '../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { IHoverService } from '../../../platform/hover/browser/hover.js';
 import { HiddenItemStrategy, WorkbenchToolBar } from '../../../platform/actions/browser/toolbar.js';
-import { DeferredPromise } from '../../../base/common/async.js';
 
 export enum CompositeBarPosition {
 	TOP,
@@ -131,7 +130,7 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 	private globalToolBar: WorkbenchToolBar | undefined;
 	private readonly globalActions: CompositeMenuActions;
 
-	private blockOpening: DeferredPromise<PaneComposite | undefined> | undefined = undefined;
+	private blockOpening = false;
 	protected contentDimension: Dimension | undefined;
 
 	constructor(
@@ -266,9 +265,11 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 	}
 
 	private createEmptyPaneMessage(parent: HTMLElement): void {
-		this.emptyPaneMessageElement = $('.empty-pane-message-area');
+		this.emptyPaneMessageElement = document.createElement('div');
+		this.emptyPaneMessageElement.classList.add('empty-pane-message-area');
 
-		const messageElement = $('.empty-pane-message');
+		const messageElement = document.createElement('div');
+		messageElement.classList.add('empty-pane-message');
 		messageElement.innerText = localize('pane.emptyMessage', "Drag a view here to display.");
 
 		this.emptyPaneMessageElement.appendChild(messageElement);
@@ -512,34 +513,21 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 		return undefined;
 	}
 
-	private async doOpenPaneComposite(id: string, focus?: boolean): Promise<PaneComposite | undefined> {
+	private doOpenPaneComposite(id: string, focus?: boolean): PaneComposite | undefined {
 		if (this.blockOpening) {
-			// Workaround against a potential race condition when calling
-			// `setPartHidden` we may end up in `openPaneComposite` again.
-			// But we still want to return the result of the original call,
-			// so we return the promise of the original call.
-			return this.blockOpening.p;
+			return undefined; // Workaround against a potential race condition
 		}
 
-		let blockOpening: DeferredPromise<PaneComposite | undefined> | undefined;
 		if (!this.layoutService.isVisible(this.partId)) {
 			try {
-				blockOpening = this.blockOpening = new DeferredPromise<PaneComposite | undefined>();
+				this.blockOpening = true;
 				this.layoutService.setPartHidden(false, this.partId);
 			} finally {
-				this.blockOpening = undefined;
+				this.blockOpening = false;
 			}
 		}
 
-		try {
-			const result = this.openComposite(id, focus) as PaneComposite | undefined;
-			blockOpening?.complete(result);
-
-			return result;
-		} catch (error) {
-			blockOpening?.error(error);
-			throw error;
-		}
+		return this.openComposite(id, focus) as PaneComposite;
 	}
 
 	getPaneComposite(id: string): PaneCompositeDescriptor | undefined {

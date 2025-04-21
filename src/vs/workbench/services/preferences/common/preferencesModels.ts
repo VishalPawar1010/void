@@ -116,6 +116,8 @@ abstract class AbstractSettingsModel extends EditorModel {
 
 	abstract settingsGroups: ISettingsGroup[];
 
+	abstract findValueMatches(filter: string, setting: ISetting): IRange[];
+
 	protected abstract update(): IFilterResult | undefined;
 }
 
@@ -154,6 +156,10 @@ export class SettingsEditorModel extends AbstractSettingsModel implements ISetti
 
 	get content(): string {
 		return this.settingsModel.getValue();
+	}
+
+	findValueMatches(filter: string, setting: ISetting): IRange[] {
+		return this.settingsModel.findMatches(filter, setting.valueRange, false, false, null, false).map(match => match.range);
 	}
 
 	protected isSettingsProperty(property: string, previousParents: string[]): boolean {
@@ -247,6 +253,11 @@ export class Settings2EditorModel extends AbstractSettingsModel implements ISett
 	/** For programmatically added groups outside of registered configurations */
 	setAdditionalGroups(groups: ISettingsGroup[]) {
 		this.additionalGroups = groups;
+	}
+
+	findValueMatches(filter: string, setting: ISetting): IRange[] {
+		// TODO @roblou
+		return [];
 	}
 
 	protected update(): IFilterResult {
@@ -938,6 +949,10 @@ export class DefaultSettingsEditorModel extends AbstractSettingsModel implements
 			descriptionIsMarkdown: undefined,
 			descriptionRanges: []
 		};
+	}
+
+	findValueMatches(filter: string, setting: ISetting): IRange[] {
+		return [];
 	}
 
 	override getPreference(key: string): ISetting | undefined {

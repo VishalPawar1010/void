@@ -12,7 +12,6 @@ import { IWorkspaceIdentifier } from '../../workspace/common/workspace.js';
 import { IWorkspacesHistoryMainService } from './workspacesHistoryMainService.js';
 import { IWorkspacesManagementMainService } from './workspacesManagementMainService.js';
 import { IWorkspaceBackupInfo, IFolderBackupInfo } from '../../backup/common/backup.js';
-import { Event } from '../../../base/common/event.js';
 
 export class WorkspacesMainService implements AddFirstParameterToFunctions<IWorkspacesService, Promise<unknown> /* only methods, not events */, number /* window ID */> {
 
@@ -24,7 +23,6 @@ export class WorkspacesMainService implements AddFirstParameterToFunctions<IWork
 		@IWorkspacesHistoryMainService private readonly workspacesHistoryMainService: IWorkspacesHistoryMainService,
 		@IBackupMainService private readonly backupMainService: IBackupMainService
 	) {
-		this.onDidChangeRecentlyOpened = this.workspacesHistoryMainService.onDidChangeRecentlyOpened;
 	}
 
 	//#region Workspace Management
@@ -54,7 +52,7 @@ export class WorkspacesMainService implements AddFirstParameterToFunctions<IWork
 
 	//#region Workspaces History
 
-	readonly onDidChangeRecentlyOpened: Event<void>;
+	readonly onDidChangeRecentlyOpened = this.workspacesHistoryMainService.onDidChangeRecentlyOpened;
 
 	getRecentlyOpened(windowId: number): Promise<IRecentlyOpened> {
 		return this.workspacesHistoryMainService.getRecentlyOpened();

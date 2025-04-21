@@ -58,7 +58,7 @@ export class TerminalIconPicker extends Disposable {
 				this._iconSelectBox.dispose();
 			}));
 			this._iconSelectBox.clearInput();
-			const hoverWidget = this._hoverService.showInstantHover({
+			const hoverWidget = this._hoverService.showHover({
 				content: this._iconSelectBox.domNode,
 				target: getActiveDocument().body,
 				position: {

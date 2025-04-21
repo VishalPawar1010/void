@@ -35,7 +35,6 @@ import { ICodeBlockActionContext } from '../codeBlockPart.js';
 import { IQuickInputService } from '../../../../../platform/quickinput/common/quickInput.js';
 import { ILabelService } from '../../../../../platform/label/common/label.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
-import { INotebookService } from '../../../notebook/common/notebookService.js';
 
 export class InsertCodeBlockOperation {
 	constructor(
@@ -118,7 +117,6 @@ export class ApplyCodeBlockOperation {
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
 		@ILabelService private readonly labelService: ILabelService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@INotebookService private readonly notebookService: INotebookService,
 	) {
 	}
 
@@ -130,7 +128,7 @@ export class ApplyCodeBlockOperation {
 			return;
 		}
 
-		if (codemapperUri && !isEqual(activeEditorControl?.getModel().uri, codemapperUri) && !this.notebookService.hasSupportedNotebooks(codemapperUri)) {
+		if (codemapperUri && !isEqual(activeEditorControl?.getModel().uri, codemapperUri)) {
 			// reveal the target file
 			try {
 				const editorPane = await this.editorService.openEditor({ resource: codemapperUri });
@@ -150,7 +148,7 @@ export class ApplyCodeBlockOperation {
 
 		let result: IComputeEditsResult | undefined = undefined;
 
-		if (activeEditorControl && !this.notebookService.hasSupportedNotebooks(codemapperUri)) {
+		if (activeEditorControl) {
 			result = await this.handleTextEditor(activeEditorControl, context.code);
 		} else {
 			const activeNotebookEditor = getActiveNotebookEditor(this.editorService);

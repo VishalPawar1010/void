@@ -30,7 +30,6 @@ registerEditorContribution(InlineChatController.ID, InlineChatController, Editor
 
 registerAction2(InlineChatActions.StopSessionAction2);
 registerAction2(InlineChatActions.RevealWidget);
-registerAction2(InlineChatActions.CancelRequestAction);
 
 // --- browser
 

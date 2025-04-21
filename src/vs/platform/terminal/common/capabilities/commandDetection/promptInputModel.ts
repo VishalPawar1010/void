@@ -10,7 +10,6 @@ import type { ITerminalCommand } from '../capabilities.js';
 import { throttle } from '../../../../../base/common/decorators.js';
 
 import type { Terminal, IMarker, IBufferCell, IBufferLine, IBuffer } from '@xterm/headless';
-import { PosixShellType, TerminalShellType } from '../../terminal.js';
 
 const enum PromptInputState {
 	Unknown = 0,
@@ -39,8 +38,6 @@ export interface IPromptInputModel extends IPromptInputModelState {
 	 * empty (as opposed to '|').
 	 */
 	getCombinedString(emptyStringWhenEmpty?: boolean): string;
-
-	setShellType(shellType?: TerminalShellType): void;
 }
 
 export interface IPromptInputModelState {
@@ -82,7 +79,6 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 	private _commandStartX: number = 0;
 	private _lastPromptLine: string | undefined;
 	private _continuationPrompt: string | undefined;
-	private _shellType: TerminalShellType | undefined;
 
 	private _lastUserInput: string = '';
 
@@ -137,10 +133,6 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 		if (this._logService.getLevel() === LogLevel.Trace) {
 			this._logService.trace(message, this.getCombinedString());
 		}
-	}
-
-	setShellType(shellType: TerminalShellType): void {
-		this._shellType = shellType;
 	}
 
 	setContinuationPrompt(value: string): void {
@@ -273,70 +265,49 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 			return;
 		}
 
-		let commandStartY = this._commandStartMarker?.line;
+		const commandStartY = this._commandStartMarker?.line;
 		if (commandStartY === undefined) {
 			return;
 		}
 
 		const buffer = this._xterm.buffer.active;
 		let line = buffer.getLine(commandStartY);
-		const absoluteCursorY = buffer.baseY + buffer.cursorY;
-		let cursorIndex: number | undefined;
-
-		let commandLine = line?.translateToString(true, this._commandStartX);
-		if (this._shellType === PosixShellType.Fish && (!line || !commandLine)) {
-			commandStartY += 1;
-			line = buffer.getLine(commandStartY);
-			if (line) {
-				commandLine = line.translateToString(true);
-				cursorIndex = absoluteCursorY === commandStartY ? buffer.cursorX : commandLine?.trimEnd().length;
-			}
-		}
-		if (line === undefined || commandLine === undefined) {
+		const commandLine = line?.translateToString(true, this._commandStartX);
+		if (!line || commandLine === undefined) {
 			this._logService.trace(`PromptInputModel#_sync: no line`);
 			return;
 		}
 
+		const absoluteCursorY = buffer.baseY + buffer.cursorY;
 		let value = commandLine;
 		let ghostTextIndex = -1;
-		if (cursorIndex === undefined) {
-			if (absoluteCursorY === commandStartY) {
-				cursorIndex = this._getRelativeCursorIndex(this._commandStartX, buffer, line);
-			} else {
-				cursorIndex = commandLine.trimEnd().length;
-			}
+		let cursorIndex: number;
+		if (absoluteCursorY === commandStartY) {
+			cursorIndex = this._getRelativeCursorIndex(this._commandStartX, buffer, line);
+		} else {
+			cursorIndex = commandLine.trimEnd().length;
+		}
+
+		// Detect ghost text by looking for italic or dim text in or after the cursor and
+		// non-italic/dim text in the cell closest non-whitespace cell before the cursor
+		if (absoluteCursorY === commandStartY && buffer.cursorX > 1) {
+			// Ghost text in pwsh only appears to happen on the cursor line
+			ghostTextIndex = this._scanForGhostText(buffer, line, cursorIndex);
 		}
 
 		// From command start line to cursor line
 		for (let y = commandStartY + 1; y <= absoluteCursorY; y++) {
-			const nextLine = buffer.getLine(y);
-			const lineText = nextLine?.translateToString(true);
-			if (lineText && nextLine) {
-				// Check if the line wrapped without a new line (continuation) or
-				// we're on the last line and the continuation prompt is not present, so we need to add the value
-				if (nextLine.isWrapped || (absoluteCursorY === y && this._continuationPrompt && !this._lineContainsContinuationPrompt(lineText))) {
-					value += `${lineText}`;
-					const relativeCursorIndex = this._getRelativeCursorIndex(0, buffer, nextLine);
+			line = buffer.getLine(y);
+			const lineText = line?.translateToString(true);
+			if (lineText && line) {
+				// Check if the line wrapped without a new line (continuation)
+				if (line.isWrapped) {
+					value += lineText;
+					const relativeCursorIndex = this._getRelativeCursorIndex(0, buffer, line);
 					if (absoluteCursorY === y) {
 						cursorIndex += relativeCursorIndex;
 					} else {
 						cursorIndex += lineText.length;
-					}
-				} else if (this._shellType === PosixShellType.Fish) {
-					if (value.endsWith('\\')) {
-						// Trim off the trailing backslash
-						value = value.substring(0, value.length - 1);
-						value += `${lineText.trim()}`;
-						cursorIndex += lineText.trim().length - 1;
-					} else {
-						if (/^ {6,}/.test(lineText)) {
-							// Was likely a new line
-							value += `\n${lineText.trim()}`;
-							cursorIndex += lineText.trim().length + 1;
-						} else {
-							value += lineText;
-							cursorIndex += lineText.length;
-						}
 					}
 				}
 				// Verify continuation prompt if we have it, if this line doesn't have it then the
@@ -345,27 +316,27 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 					const trimmedLineText = this._trimContinuationPrompt(lineText);
 					value += `\n${trimmedLineText}`;
 					if (absoluteCursorY === y) {
-						const continuationCellWidth = this._getContinuationPromptCellWidth(nextLine, lineText);
-						const relativeCursorIndex = this._getRelativeCursorIndex(continuationCellWidth, buffer, nextLine);
+						const continuationCellWidth = this._getContinuationPromptCellWidth(line, lineText);
+						const relativeCursorIndex = this._getRelativeCursorIndex(continuationCellWidth, buffer, line);
 						cursorIndex += relativeCursorIndex + 1;
 					} else {
 						cursorIndex += trimmedLineText.length + 1;
 					}
+				} else {
+					break;
 				}
 			}
 		}
 
 		// Below cursor line
 		for (let y = absoluteCursorY + 1; y < buffer.baseY + this._xterm.rows; y++) {
-			const belowCursorLine = buffer.getLine(y);
-			const lineText = belowCursorLine?.translateToString(true);
-			if (lineText && belowCursorLine) {
-				if (this._shellType === PosixShellType.Fish) {
-					value += `${lineText}`;
-				} else if (this._continuationPrompt === undefined || this._lineContainsContinuationPrompt(lineText)) {
+			line = buffer.getLine(y);
+			const lineText = line?.translateToString(true);
+			if (lineText && line) {
+				if (this._continuationPrompt === undefined || this._lineContainsContinuationPrompt(lineText)) {
 					value += `\n${this._trimContinuationPrompt(lineText)}`;
 				} else {
-					value += lineText;
+					break;
 				}
 			} else {
 				break;
@@ -436,8 +407,6 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 			value = valueLines.map(e => e.trimEnd()).join('\n') + ' '.repeat(trailingWhitespace);
 		}
 
-		ghostTextIndex = this._scanForGhostText(buffer, line, cursorIndex);
-
 		if (this._value !== value || this._cursorIndex !== cursorIndex || this._ghostTextIndex !== ghostTextIndex) {
 			this._value = value;
 			this._cursorIndex = cursorIndex;
@@ -452,7 +421,7 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 
 	/**
 	 * Detect ghost text by looking for italic or dim text in or after the cursor and
-	 * non-italic/dim text in the first non-whitespace cell following command start and before the cursor.
+	 * non-italic/dim text in the cell closest non-whitespace cell before the cursor.
 	 */
 	private _scanForGhostText(buffer: IBuffer, line: IBufferLine, cursorIndex: number): number {
 		if (!this.value.trim().length) {
@@ -552,11 +521,7 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 				}
 			}
 			// Calculate the ghost text start index
-			if (buffer.baseY + buffer.cursorY === this._commandStartMarker?.line) {
-				ghostTextIndex = positionsWithGhostStyle[0] - this._commandStartX;
-			} else {
-				ghostTextIndex = positionsWithGhostStyle[0];
-			}
+			ghostTextIndex = positionsWithGhostStyle[0] - this._commandStartX;
 		}
 
 		// Ensure no earlier cells in the line match `lastNonWhitespaceCell`'s style,

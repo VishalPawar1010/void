@@ -30,9 +30,8 @@ declare module 'vscode' {
 	}
 
 	export class ChatResponseCodeblockUriPart {
-		isEdit?: boolean;
 		value: Uri;
-		constructor(value: Uri, isEdit?: boolean);
+		constructor(value: Uri);
 	}
 
 	/**
@@ -79,7 +78,7 @@ declare module 'vscode' {
 		constructor(value: Uri, license: string, snippet: string);
 	}
 
-	export type ExtendedChatResponsePart = ChatResponsePart | ChatResponseTextEditPart | ChatResponseNotebookEditPart | ChatResponseConfirmationPart | ChatResponseCodeCitationPart | ChatResponseReferencePart2 | ChatResponseMovePart | ChatResponseExtensionsPart;
+	export type ExtendedChatResponsePart = ChatResponsePart | ChatResponseTextEditPart | ChatResponseConfirmationPart | ChatResponseCodeCitationPart | ChatResponseReferencePart2 | ChatResponseMovePart;
 
 	export class ChatResponseWarningPart {
 		value: MarkdownString;
@@ -159,13 +158,6 @@ declare module 'vscode' {
 		resolve?(token: CancellationToken): Thenable<void>;
 	}
 
-	export class ChatResponseExtensionsPart {
-
-		readonly extensions: string[];
-
-		constructor(extensions: string[]);
-	}
-
 	export interface ChatResponseStream {
 
 		/**
@@ -187,7 +179,7 @@ declare module 'vscode' {
 		notebookEdit(target: Uri, isDone: true): void;
 
 		markdownWithVulnerabilities(value: string | MarkdownString, vulnerabilities: ChatVulnerability[]): void;
-		codeblockUri(uri: Uri, isEdit?: boolean): void;
+		codeblockUri(uri: Uri): void;
 		push(part: ChatResponsePart | ChatResponseTextEditPart | ChatResponseWarningPart | ChatResponseProgressPart2): void;
 
 		/**
@@ -225,20 +217,6 @@ declare module 'vscode' {
 		Partial = 2,
 		Omitted = 3
 	}
-
-
-	export interface ChatRequest {
-
-		/**
-		 * A list of tools that the user selected for this request, when `undefined` any tool
-		 * from {@link lm.tools} should be used.
-		 *
-		 * Tools can be called with {@link lm.invokeTool} with input that match their
-		 * declared `inputSchema`.
-		 */
-		readonly tools: readonly LanguageModelToolInformation[] | undefined;
-	}
-
 
 	/**
 	 * Does this piggy-back on the existing ChatRequest, or is it a different type of request entirely?
@@ -412,7 +390,7 @@ declare module 'vscode' {
 	}
 
 	export namespace lm {
-		export function fileIsIgnored(uri: Uri, token?: CancellationToken): Thenable<boolean>;
+		export function fileIsIgnored(uri: Uri, token: CancellationToken): Thenable<boolean>;
 	}
 
 	export interface ChatVariableValue {
@@ -439,9 +417,5 @@ declare module 'vscode' {
 		Short = 1,
 		Medium = 2,
 		Full = 3
-	}
-
-	export interface LanguageModelToolInvocationOptions<T> {
-		model?: LanguageModelChat;
 	}
 }

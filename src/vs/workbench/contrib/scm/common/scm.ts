@@ -233,7 +233,6 @@ export interface ISCMViewService {
 	 * Focused repository or the repository for the active editor
 	 */
 	readonly activeRepository: IObservable<ISCMRepository | undefined>;
-	pinActiveRepository(repository: ISCMRepository | undefined): void;
 }
 
 export const SCM_CHANGES_EDITOR_ID = 'workbench.editor.scmChangesEditor';

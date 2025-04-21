@@ -134,7 +134,6 @@ class AskQuickChatAction extends Action2 {
 			id: `workbench.action.openQuickChat`,
 			category: CHAT_CATEGORY,
 			title: localize2('interactiveSession.open', "Open Quick Chat"),
-			precondition: ChatContextKeys.enabled,
 			f1: true
 		});
 	}

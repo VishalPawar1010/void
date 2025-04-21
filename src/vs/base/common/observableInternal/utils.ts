@@ -9,7 +9,6 @@ import { DebugNameData, DebugOwner, IDebugNameData, getDebugName, } from './debu
 import { BugIndicatingError, DisposableStore, EqualityComparer, Event, IDisposable, IValueWithChangeEvent, strictEquals, toDisposable } from './commonFacade/deps.js';
 import { derived, derivedOpts } from './derived.js';
 import { getLogger } from './logging/logging.js';
-import { CancellationToken, cancelOnDispose } from '../cancellation.js';
 
 /**
  * Represents an efficient observable whose value never changes.
@@ -103,9 +102,9 @@ export function observableFromEventOpts<T, TArgs = unknown>(
 export class FromEventObservable<TArgs, T> extends BaseObservable<T> {
 	public static globalTransaction: ITransaction | undefined;
 
-	private _value: T | undefined;
-	private _hasValue = false;
-	private _subscription: IDisposable | undefined;
+	private value: T | undefined;
+	private hasValue = false;
+	private subscription: IDisposable | undefined;
 
 	constructor(
 		private readonly _debugNameData: DebugNameData,
@@ -127,25 +126,25 @@ export class FromEventObservable<TArgs, T> extends BaseObservable<T> {
 	}
 
 	protected override onFirstObserverAdded(): void {
-		this._subscription = this.event(this.handleEvent);
+		this.subscription = this.event(this.handleEvent);
 	}
 
 	private readonly handleEvent = (args: TArgs | undefined) => {
 		const newValue = this._getValue(args);
-		const oldValue = this._value;
+		const oldValue = this.value;
 
-		const didChange = !this._hasValue || !(this._equalityComparator(oldValue!, newValue));
+		const didChange = !this.hasValue || !(this._equalityComparator(oldValue!, newValue));
 		let didRunTransaction = false;
 
 		if (didChange) {
-			this._value = newValue;
+			this.value = newValue;
 
-			if (this._hasValue) {
+			if (this.hasValue) {
 				didRunTransaction = true;
 				subtransaction(
 					this._getTransaction(),
 					(tx) => {
-						getLogger()?.handleObservableUpdated(this, { oldValue, newValue, change: undefined, didChange, hadValue: this._hasValue });
+						getLogger()?.handleObservableUpdated(this, { oldValue, newValue, change: undefined, didChange, hadValue: this.hasValue });
 
 						for (const o of this._observers) {
 							tx.updateObserver(o, this);
@@ -158,36 +157,32 @@ export class FromEventObservable<TArgs, T> extends BaseObservable<T> {
 					}
 				);
 			}
-			this._hasValue = true;
+			this.hasValue = true;
 		}
 
 		if (!didRunTransaction) {
-			getLogger()?.handleObservableUpdated(this, { oldValue, newValue, change: undefined, didChange, hadValue: this._hasValue });
+			getLogger()?.handleObservableUpdated(this, { oldValue, newValue, change: undefined, didChange, hadValue: this.hasValue });
 		}
 	};
 
 	protected override onLastObserverRemoved(): void {
-		this._subscription!.dispose();
-		this._subscription = undefined;
-		this._hasValue = false;
-		this._value = undefined;
+		this.subscription!.dispose();
+		this.subscription = undefined;
+		this.hasValue = false;
+		this.value = undefined;
 	}
 
 	public get(): T {
-		if (this._subscription) {
-			if (!this._hasValue) {
+		if (this.subscription) {
+			if (!this.hasValue) {
 				this.handleEvent(undefined);
 			}
-			return this._value!;
+			return this.value!;
 		} else {
 			// no cache, as there are no subscribers to keep it updated
 			const value = this._getValue(undefined);
 			return value;
 		}
-	}
-
-	public debugSetValue(value: unknown) {
-		this._value = value as any;
 	}
 }
 
@@ -641,19 +636,17 @@ type RemoveUndefined<T> = T extends undefined ? never : T;
 export function runOnChange<T, TChange>(observable: IObservableWithChange<T, TChange>, cb: (value: T, previousValue: undefined | T, deltas: RemoveUndefined<TChange>[]) => void): IDisposable {
 	let _previousValue: T | undefined;
 	return autorunWithStoreHandleChanges({
-		changeTracker: {
-			createChangeSummary: () => ({ deltas: [] as RemoveUndefined<TChange>[], didChange: false }),
-			handleChange: (context, changeSummary) => {
-				if (context.didChange(observable)) {
-					const e = context.change;
-					if (e !== undefined) {
-						changeSummary.deltas.push(e as RemoveUndefined<TChange>);
-					}
-					changeSummary.didChange = true;
+		createEmptyChangeSummary: () => ({ deltas: [] as RemoveUndefined<TChange>[], didChange: false }),
+		handleChange: (context, changeSummary) => {
+			if (context.didChange(observable)) {
+				const e = context.change;
+				if (e !== undefined) {
+					changeSummary.deltas.push(e as RemoveUndefined<TChange>);
 				}
-				return true;
-			},
-		}
+				changeSummary.didChange = true;
+			}
+			return true;
+		},
 	}, (reader, changeSummary) => {
 		const value = observable.read(reader);
 		const previousValue = _previousValue;
@@ -676,10 +669,4 @@ export function runOnChangeWithStore<T, TChange>(observable: IObservableWithChan
 			store.dispose();
 		}
 	};
-}
-
-export function runOnChangeWithCancellationToken<T, TChange>(observable: IObservableWithChange<T, TChange>, cb: (value: T, previousValue: undefined | T, deltas: RemoveUndefined<TChange>[], token: CancellationToken) => Promise<void>): IDisposable {
-	return runOnChangeWithStore(observable, (value, previousValue: undefined | T, deltas, store) => {
-		cb(value, previousValue, deltas, cancelOnDispose(store));
-	});
 }

@@ -59,23 +59,22 @@ export class IntegrityService implements IIntegrityService {
 
 	declare readonly _serviceBrand: undefined;
 
-	private readonly storage: IntegrityStorage;
+	private readonly _storage = new IntegrityStorage(this.storageService);
 
-	private readonly isPurePromise: Promise<IntegrityTestResult>;
-	isPure(): Promise<IntegrityTestResult> { return this.isPurePromise; }
+	private readonly _isPurePromise = this._isPure();
+	isPure(): Promise<IntegrityTestResult> {
+		return this._isPurePromise;
+	}
 
 	constructor(
 		@INotificationService private readonly notificationService: INotificationService,
-		@IStorageService storageService: IStorageService,
+		@IStorageService private readonly storageService: IStorageService,
 		@ILifecycleService private readonly lifecycleService: ILifecycleService,
 		@IOpenerService private readonly openerService: IOpenerService,
 		@IProductService private readonly productService: IProductService,
 		@IChecksumService private readonly checksumService: IChecksumService,
 		@ILogService private readonly logService: ILogService
 	) {
-		this.storage = new IntegrityStorage(storageService);
-		this.isPurePromise = this._isPure();
-
 		this._compute();
 	}
 
@@ -93,7 +92,7 @@ export class IntegrityService implements IIntegrityService {
 
 `);
 
-		const storedData = this.storage.get();
+		const storedData = this._storage.get();
 		if (storedData?.dontShowPrompt && storedData.commit === this.productService.commit) {
 			return; // Do not prompt
 		}
@@ -158,7 +157,7 @@ export class IntegrityService implements IIntegrityService {
 					{
 						label: localize('integrity.dontShowAgain', "Don't Show Again"),
 						isSecondary: true,
-						run: () => this.storage.set({ dontShowPrompt: true, commit: this.productService.commit })
+						run: () => this._storage.set({ dontShowPrompt: true, commit: this.productService.commit })
 					}
 				],
 				{

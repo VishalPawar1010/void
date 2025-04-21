@@ -28,6 +28,10 @@ const args: Fig.Arg = {
 	isVariadic: true,
 };
 
+// const pattern: Fig.Arg = {
+//   name: "pattern",
+// };
+
 const name: Fig.Arg = {
 	name: "name",
 };

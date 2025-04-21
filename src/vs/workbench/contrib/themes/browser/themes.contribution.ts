@@ -41,7 +41,7 @@ import { mainWindow } from '../../../../base/browser/window.js';
 import { IPreferencesService } from '../../../services/preferences/common/preferences.js';
 import { Toggle } from '../../../../base/browser/ui/toggle/toggle.js';
 import { defaultToggleStyles } from '../../../../platform/theme/browser/defaultStyles.js';
-import { DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
+import { DisposableStore } from '../../../../base/common/lifecycle.js';
 
 export const manageExtensionIcon = registerIcon('theme-selection-manage-extension', Codicon.gear, localize('manageExtensionIcon', 'Icon for the \'Manage\' action in the theme selection quick pick.'));
 
@@ -53,7 +53,7 @@ enum ConfigureItem {
 	CUSTOM_TOP_ENTRY = 'customTopEntry'
 }
 
-class MarketplaceThemesPicker implements IDisposable {
+class MarketplaceThemesPicker {
 	private readonly _installedExtensions: Promise<Set<string>>;
 	private readonly _marketplaceExtensions: Set<string> = new Set();
 	private readonly _marketplaceThemes: ThemeItem[] = [];
@@ -275,7 +275,6 @@ class MarketplaceThemesPicker implements IDisposable {
 		this._queryDelayer.dispose();
 		this._marketplaceExtensions.clear();
 		this._marketplaceThemes.length = 0;
-		this._onDidChange.dispose();
 	}
 }
 
@@ -307,7 +306,7 @@ class InstalledThemesPicker {
 
 		let marketplaceThemePicker: MarketplaceThemesPicker | undefined;
 		if (this.extensionGalleryService.isEnabled()) {
-			if (await this.extensionResourceLoaderService.supportsExtensionGalleryResources() && this.options.browseMessage) {
+			if (this.extensionResourceLoaderService.supportsExtensionGalleryResources && this.options.browseMessage) {
 				marketplaceThemePicker = this.instantiationService.createInstance(MarketplaceThemesPicker, this.getMarketplaceColorThemes.bind(this), this.options.marketplaceTag);
 				picks = [configurationEntry(this.options.browseMessage, ConfigureItem.BROWSE_GALLERY), ...picks];
 			} else {
@@ -773,7 +772,7 @@ registerAction2(class extends Action2 {
 		const extensionResourceLoaderService = accessor.get(IExtensionResourceLoaderService);
 		const instantiationService = accessor.get(IInstantiationService);
 
-		if (!extensionGalleryService.isEnabled() || !await extensionResourceLoaderService.supportsExtensionGalleryResources()) {
+		if (!extensionGalleryService.isEnabled() || !extensionResourceLoaderService.supportsExtensionGalleryResources) {
 			return;
 		}
 		const currentTheme = themeService.getColorTheme();
@@ -810,7 +809,7 @@ MenuRegistry.appendMenuItem(MenuId.GlobalActivity, {
 	order: 7
 } satisfies ISubmenuItem);
 MenuRegistry.appendMenuItem(MenuId.MenubarPreferencesMenu, {
-	title: localize({ key: 'miSelectTheme', comment: ['&& denotes a mnemonic'] }, "&&Themes"),
+	title: localize({ key: 'miSelectTheme', comment: ['&& denotes a mnemonic'] }, "&&Theme"),
 	submenu: ThemesSubMenu,
 	group: '2_configuration',
 	order: 7

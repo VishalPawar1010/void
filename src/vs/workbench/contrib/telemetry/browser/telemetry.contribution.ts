@@ -39,7 +39,6 @@ import { localize2 } from '../../../../nls.js';
 import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
 import { IOutputService } from '../../../services/output/common/output.js';
 import { ILoggerResource, ILoggerService, LogLevel } from '../../../../platform/log/common/log.js';
-import { VerifyExtensionSignatureConfigKey } from '../../../../platform/extensionManagement/common/extensionManagement.js';
 
 type TelemetryData = {
 	mimeType: TelemetryTrustedValue<string>;
@@ -155,7 +154,15 @@ export class TelemetryContribution extends Disposable implements IWorkbenchContr
 
 	private onTextFileModelResolved(e: ITextFileResolveEvent): void {
 		const settingsType = this.getTypeIfSettings(e.model.resource);
-		if (!settingsType) {
+		if (settingsType) {
+			type SettingsReadClassification = {
+				owner: 'isidorn';
+				settingsType: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The type of the settings file that was read.' };
+				comment: 'Track when a settings file was read, for example from an editor.';
+			};
+
+			this.telemetryService.publicLog2<{ settingsType: string }, SettingsReadClassification>('settingsRead', { settingsType }); // Do not log read to user settings.json and .vscode folder as a fileGet event as it ruins our JSON usage data
+		} else {
 			type FileGetClassification = {
 				owner: 'isidorn';
 				comment: 'Track when a file was read, for example from an editor.';
@@ -167,7 +174,14 @@ export class TelemetryContribution extends Disposable implements IWorkbenchContr
 
 	private onTextFileModelSaved(e: ITextFileSaveEvent): void {
 		const settingsType = this.getTypeIfSettings(e.model.resource);
-		if (!settingsType) {
+		if (settingsType) {
+			type SettingsWrittenClassification = {
+				owner: 'isidorn';
+				settingsType: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The type of the settings file that was written to.' };
+				comment: 'Track when a settings file was written to, for example from an editor.';
+			};
+			this.telemetryService.publicLog2<{ settingsType: string }, SettingsWrittenClassification>('settingsWritten', { settingsType }); // Do not log write to user settings.json and .vscode folder as a filePUT event as it ruins our JSON usage data
+		} else {
 			type FilePutClassfication = {
 				owner: 'isidorn';
 				comment: 'Track when a file was written to, for example from an editor.';
@@ -383,7 +397,7 @@ class ConfigurationTelemetryContribution extends Disposable implements IWorkbenc
 				}>('window.titleBarStyle', { settingValue: this.getValueToReport(key, target), source });
 				return;
 
-			case VerifyExtensionSignatureConfigKey:
+			case 'extensions.verifySignature':
 				this.telemetryService.publicLog2<UpdatedSettingEvent, {
 					owner: 'sandy081';
 					comment: 'This is used to know if extensions signature verification is enabled or not';

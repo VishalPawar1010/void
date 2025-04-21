@@ -69,8 +69,6 @@ import { ChatTreeItem } from './chat.js';
 import { IChatRendererDelegate } from './chatListRenderer.js';
 import { ChatEditorOptions } from './chatOptions.js';
 import { emptyProgressRunner, IEditorProgressService } from '../../../../platform/progress/common/progress.js';
-import { SuggestController } from '../../../../editor/contrib/suggest/browser/suggestController.js';
-import { SnippetController2 } from '../../../../editor/contrib/snippet/browser/snippetController2.js';
 
 const $ = dom.$;
 
@@ -142,7 +140,6 @@ export interface ICodeBlockRenderOptions {
 	verticalPadding?: number;
 	reserveWidth?: number;
 	editorOptions?: IEditorOptions;
-	maxHeightInLines?: number;
 }
 
 const defaultCodeblockPadding = 10;
@@ -315,8 +312,6 @@ export class CodeBlockPart extends Disposable {
 				GlyphHoverController.ID,
 				MessageController.ID,
 				GotoDefinitionAtPositionEditorContribution.ID,
-				SuggestController.ID,
-				SnippetController2.ID,
 				ColorDetector.ID,
 				LinkDetector.ID,
 
@@ -367,15 +362,9 @@ export class CodeBlockPart extends Disposable {
 
 	layout(width: number): void {
 		const contentHeight = this.getContentHeight();
-
-		let height = contentHeight;
-		if (this.currentCodeBlockData?.renderOptions?.maxHeightInLines) {
-			height = Math.min(contentHeight, this.editor.getOption(EditorOption.lineHeight) * this.currentCodeBlockData?.renderOptions?.maxHeightInLines);
-		}
-
 		const editorBorder = 2;
 		width = width - editorBorder - (this.currentCodeBlockData?.renderOptions?.reserveWidth ?? 0);
-		this.editor.layout({ width, height });
+		this.editor.layout({ width, height: contentHeight });
 		this.updatePaddingForLayout();
 	}
 
@@ -405,12 +394,12 @@ export class CodeBlockPart extends Disposable {
 			return;
 		}
 
+		this.layout(width);
 		this.editor.updateOptions({
 			...this.getEditorOptionsFromConfig(),
 			ariaLabel: localize('chat.codeBlockLabel', "Code block {0}", data.codeBlockIndex + 1),
 		});
-		this.layout(width);
-		this.toolbar.setAriaLabel(localize('chat.codeBlockToolbarLabel', "Code block {0}", data.codeBlockIndex + 1));
+		this.toolbar.setAriaLabel(localize('chat.codeBlockToolbarLabel', "Toolbar for code block {0}", data.codeBlockIndex + 1));
 		if (data.renderOptions?.hideToolbar) {
 			dom.hide(this.toolbar.getElement());
 		} else {

@@ -3,15 +3,16 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { localize } from '../../../../nls.js';
 import { createHotClass } from '../../../../base/common/hotReloadHelpers.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
-import { autorunWithStore, debouncedObservable, derived } from '../../../../base/common/observable.js';
+import { autorunWithStore, derived } from '../../../../base/common/observable.js';
+import { debouncedObservable } from '../../../../base/common/observableInternal/utils.js';
 import Severity from '../../../../base/common/severity.js';
 import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
-import { observableCodeEditor } from '../../../../editor/browser/observableCodeEditor.js';
 import { InlineCompletionsController } from '../../../../editor/contrib/inlineCompletions/browser/controller/inlineCompletionsController.js';
-import { localize } from '../../../../nls.js';
 import { ILanguageStatusService } from '../../../services/languageStatus/common/languageStatusService.js';
+import { observableCodeEditor } from '../../../../editor/browser/observableCodeEditor.js';
 
 export class InlineCompletionLanguageStatusBarContribution extends Disposable {
 	public static readonly hot = createHotClass(InlineCompletionLanguageStatusBarContribution);
@@ -68,7 +69,7 @@ export class InlineCompletionLanguageStatusBarContribution extends Disposable {
 				accessibilityInfo: undefined,
 				busy: statusMap[status].loading,
 				command: undefined,
-				detail: localize('inlineSuggestionsSmall', "Inline suggestions"),
+				detail: localize('inlineSuggestions', "Inline Suggestions"),
 				id: 'inlineSuggestions',
 				label: { value: statusMap[status].label, shortValue: statusMap[status].shortLabel },
 				name: localize('inlineSuggestions', "Inline Suggestions"),

@@ -16,8 +16,7 @@ export async function getBashGlobals(options: ExecOptionsWithStringEncoding, exi
 }
 
 async function getAliases(options: ExecOptionsWithStringEncoding): Promise<ICompletionResource[]> {
-	const args = process.platform === 'darwin' ? ['-icl', 'alias'] : ['-ic', 'alias'];
-	return getAliasesHelper('bash', args, /^alias (?<alias>[a-zA-Z0-9\.:-]+)='(?<resolved>.+)'$/, options);
+	return getAliasesHelper('bash', ['-ic', 'alias'], /^alias (?<alias>[a-zA-Z0-9\.:-]+)='(?<resolved>.+)'$/, options);
 }
 
 export async function getBuiltins(

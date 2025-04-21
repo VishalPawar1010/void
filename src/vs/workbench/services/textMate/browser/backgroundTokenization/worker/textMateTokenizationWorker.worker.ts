@@ -11,10 +11,14 @@ import { IValidEmbeddedLanguagesMap, IValidGrammarDefinition, IValidTokenTypeMap
 import type { IOnigLib, IRawTheme, StackDiff } from 'vscode-textmate';
 import { TextMateWorkerTokenizer } from './textMateWorkerTokenizer.js';
 import { importAMDNodeModule } from '../../../../../../amdX.js';
-import { IWebWorkerServerRequestHandler, IWebWorkerServer } from '../../../../../../base/common/worker/webWorker.js';
+import { IRequestHandler, IWorkerServer } from '../../../../../../base/common/worker/simpleWorker.js';
 import { TextMateWorkerHost } from './textMateWorkerHost.js';
 
-export function create(workerServer: IWebWorkerServer): TextMateTokenizationWorker {
+/**
+ * Defines the worker entry point. Must be exported and named `create`.
+ * @skipMangle
+ */
+export function create(workerServer: IWorkerServer): TextMateTokenizationWorker {
 	return new TextMateTokenizationWorker(workerServer);
 }
 
@@ -41,7 +45,7 @@ export interface StateDeltas {
 	stateDeltas: (StackDiff | null)[];
 }
 
-export class TextMateTokenizationWorker implements IWebWorkerServerRequestHandler {
+export class TextMateTokenizationWorker implements IRequestHandler {
 	_requestHandlerBrand: any;
 
 	private readonly _host: TextMateWorkerHost;
@@ -49,7 +53,7 @@ export class TextMateTokenizationWorker implements IWebWorkerServerRequestHandle
 	private readonly _grammarCache: Promise<ICreateGrammarResult>[] = [];
 	private _grammarFactory: Promise<TMGrammarFactory | null> = Promise.resolve(null);
 
-	constructor(workerServer: IWebWorkerServer) {
+	constructor(workerServer: IWorkerServer) {
 		this._host = TextMateWorkerHost.getChannel(workerServer);
 	}
 

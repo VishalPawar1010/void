@@ -12,7 +12,7 @@ import * as platform from '../../../../base/common/platform.js';
 import { InvisibleCharacters, isBasicASCII } from '../../../../base/common/strings.js';
 import './unicodeHighlighter.css';
 import { IActiveCodeEditor, ICodeEditor } from '../../../browser/editorBrowser.js';
-import { EditorAction, EditorContributionInstantiation, registerEditorContribution, ServicesAccessor } from '../../../browser/editorExtensions.js';
+import { EditorAction, EditorContributionInstantiation, registerEditorAction, registerEditorContribution, ServicesAccessor } from '../../../browser/editorExtensions.js';
 import { InUntrustedWorkspace, inUntrustedWorkspace, EditorOption, InternalUnicodeHighlightOptions, unicodeHighlightConfigKeys } from '../../../common/config/editorOptions.js';
 import { Range } from '../../../common/core/range.js';
 import { IEditorContribution } from '../../../common/editorCommon.js';
@@ -32,7 +32,6 @@ import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { IQuickInputService, IQuickPickItem } from '../../../../platform/quickinput/common/quickInput.js';
 import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
 import { IWorkspaceTrustManagementService } from '../../../../platform/workspace/common/workspaceTrust.js';
-import { Action2, registerAction2 } from '../../../../platform/actions/common/actions.js';
 
 export const warningIcon = registerIcon('extensions-warning-message', Codicon.warning, nls.localize('warningIcon', 'Icon shown with a warning message in the extensions editor.'));
 
@@ -120,7 +119,7 @@ export class UnicodeHighlighter extends Disposable implements IEditorContributio
 				actions: [
 					{
 						label: data.command.shortLabel,
-						href: `command:${data.command.desc.id}`
+						href: `command:${data.command.id}`
 					}
 				],
 				onClose: () => {
@@ -619,15 +618,14 @@ export class DisableHighlightingInStringsAction extends EditorAction implements 
 	}
 }
 
-export class DisableHighlightingOfAmbiguousCharactersAction extends Action2 implements IDisableUnicodeHighlightAction {
+export class DisableHighlightingOfAmbiguousCharactersAction extends EditorAction implements IDisableUnicodeHighlightAction {
 	public static ID = 'editor.action.unicodeHighlight.disableHighlightingOfAmbiguousCharacters';
 	public readonly shortLabel = nls.localize('unicodeHighlight.disableHighlightingOfAmbiguousCharacters.shortLabel', 'Disable Ambiguous Highlight');
 	constructor() {
 		super({
 			id: DisableHighlightingOfAmbiguousCharactersAction.ID,
-			title: nls.localize2('action.unicodeHighlight.disableHighlightingOfAmbiguousCharacters', "Disable highlighting of ambiguous characters"),
-			precondition: undefined,
-			f1: false,
+			label: nls.localize2('action.unicodeHighlight.disableHighlightingOfAmbiguousCharacters', "Disable highlighting of ambiguous characters"),
+			precondition: undefined
 		});
 	}
 
@@ -643,15 +641,14 @@ export class DisableHighlightingOfAmbiguousCharactersAction extends Action2 impl
 	}
 }
 
-export class DisableHighlightingOfInvisibleCharactersAction extends Action2 implements IDisableUnicodeHighlightAction {
+export class DisableHighlightingOfInvisibleCharactersAction extends EditorAction implements IDisableUnicodeHighlightAction {
 	public static ID = 'editor.action.unicodeHighlight.disableHighlightingOfInvisibleCharacters';
 	public readonly shortLabel = nls.localize('unicodeHighlight.disableHighlightingOfInvisibleCharacters.shortLabel', 'Disable Invisible Highlight');
 	constructor() {
 		super({
 			id: DisableHighlightingOfInvisibleCharactersAction.ID,
-			title: nls.localize2('action.unicodeHighlight.disableHighlightingOfInvisibleCharacters', "Disable highlighting of invisible characters"),
-			precondition: undefined,
-			f1: false,
+			label: nls.localize2('action.unicodeHighlight.disableHighlightingOfInvisibleCharacters', "Disable highlighting of invisible characters"),
+			precondition: undefined
 		});
 	}
 
@@ -667,15 +664,14 @@ export class DisableHighlightingOfInvisibleCharactersAction extends Action2 impl
 	}
 }
 
-export class DisableHighlightingOfNonBasicAsciiCharactersAction extends Action2 implements IDisableUnicodeHighlightAction {
+export class DisableHighlightingOfNonBasicAsciiCharactersAction extends EditorAction implements IDisableUnicodeHighlightAction {
 	public static ID = 'editor.action.unicodeHighlight.disableHighlightingOfNonBasicAsciiCharacters';
 	public readonly shortLabel = nls.localize('unicodeHighlight.disableHighlightingOfNonBasicAsciiCharacters.shortLabel', 'Disable Non ASCII Highlight');
 	constructor() {
 		super({
 			id: DisableHighlightingOfNonBasicAsciiCharactersAction.ID,
-			title: nls.localize2('action.unicodeHighlight.disableHighlightingOfNonBasicAsciiCharacters', "Disable highlighting of non basic ASCII characters"),
-			precondition: undefined,
-			f1: false,
+			label: nls.localize2('action.unicodeHighlight.disableHighlightingOfNonBasicAsciiCharacters', "Disable highlighting of non basic ASCII characters"),
+			precondition: undefined
 		});
 	}
 
@@ -698,18 +694,17 @@ interface ShowExcludeOptionsArgs {
 	inString: boolean;
 }
 
-export class ShowExcludeOptions extends Action2 {
+export class ShowExcludeOptions extends EditorAction {
 	public static ID = 'editor.action.unicodeHighlight.showExcludeOptions';
 	constructor() {
 		super({
 			id: ShowExcludeOptions.ID,
-			title: nls.localize2('action.unicodeHighlight.showExcludeOptions', "Show Exclude Options"),
-			precondition: undefined,
-			f1: false,
+			label: nls.localize2('action.unicodeHighlight.showExcludeOptions', "Show Exclude Options"),
+			precondition: undefined
 		});
 	}
 
-	public async run(accessor: ServicesAccessor | undefined, args: any): Promise<void> {
+	public async run(accessor: ServicesAccessor | undefined, editor: ICodeEditor, args: any): Promise<void> {
 		const { codePoint, reason, inString, inComment } = args as ShowExcludeOptionsArgs;
 
 		const char = String.fromCodePoint(codePoint);
@@ -756,19 +751,16 @@ export class ShowExcludeOptions extends Action2 {
 			options.push({ label: action.label, run: async () => action.runAction(configurationService) });
 		}
 
-		function getTitle(options: Action2) {
-			return typeof options.desc.title === 'string' ? options.desc.title : options.desc.title.value;
-		}
-
 		if (reason.kind === UnicodeHighlighterReasonKind.Ambiguous) {
 			const action = new DisableHighlightingOfAmbiguousCharactersAction();
-			options.push({ label: getTitle(action), run: async () => action.runAction(configurationService) });
+			options.push({ label: action.label, run: async () => action.runAction(configurationService) });
 		} else if (reason.kind === UnicodeHighlighterReasonKind.Invisible) {
 			const action = new DisableHighlightingOfInvisibleCharactersAction();
-			options.push({ label: getTitle(action), run: async () => action.runAction(configurationService) });
-		} else if (reason.kind === UnicodeHighlighterReasonKind.NonBasicAscii) {
+			options.push({ label: action.label, run: async () => action.runAction(configurationService) });
+		}
+		else if (reason.kind === UnicodeHighlighterReasonKind.NonBasicAscii) {
 			const action = new DisableHighlightingOfNonBasicAsciiCharactersAction();
-			options.push({ label: getTitle(action), run: async () => action.runAction(configurationService) });
+			options.push({ label: action.label, run: async () => action.runAction(configurationService) });
 		} else {
 			expectNever(reason);
 		}
@@ -823,9 +815,9 @@ function expectNever(value: never) {
 	throw new Error(`Unexpected value: ${value}`);
 }
 
-registerAction2(DisableHighlightingOfAmbiguousCharactersAction);
-registerAction2(DisableHighlightingOfInvisibleCharactersAction);
-registerAction2(DisableHighlightingOfNonBasicAsciiCharactersAction);
-registerAction2(ShowExcludeOptions);
+registerEditorAction(DisableHighlightingOfAmbiguousCharactersAction);
+registerEditorAction(DisableHighlightingOfInvisibleCharactersAction);
+registerEditorAction(DisableHighlightingOfNonBasicAsciiCharactersAction);
+registerEditorAction(ShowExcludeOptions);
 registerEditorContribution(UnicodeHighlighter.ID, UnicodeHighlighter, EditorContributionInstantiation.AfterFirstRender);
 HoverParticipantRegistry.register(UnicodeHighlighterHoverParticipant);

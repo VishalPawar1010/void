@@ -33,8 +33,7 @@ import { URI } from '../../../../../base/common/uri.js';
 import { IOpenerService } from '../../../../../platform/opener/common/opener.js';
 import { INotebookTextModel } from '../../common/notebookCommon.js';
 import { SELECT_KERNEL_ID } from '../controller/coreActions.js';
-import { EnablementState, IExtensionManagementServerService } from '../../../../services/extensionManagement/common/extensionManagement.js';
-import { areSameExtensions } from '../../../../../platform/extensionManagement/common/extensionManagementUtil.js';
+import { EnablementState } from '../../../../services/extensionManagement/common/extensionManagement.js';
 
 type KernelPick = IQuickPickItem & { kernel: INotebookKernel };
 function isKernelPick(item: QuickPickInput<IQuickPickItem>): item is KernelPick {
@@ -106,8 +105,7 @@ abstract class KernelPickerStrategyBase implements IKernelPickerStrategy {
 		protected readonly _logService: ILogService,
 		protected readonly _extensionWorkbenchService: IExtensionsWorkbenchService,
 		protected readonly _extensionService: IExtensionService,
-		protected readonly _commandService: ICommandService,
-		protected readonly _extensionManagementServerService: IExtensionManagementServerService
+		protected readonly _commandService: ICommandService
 	) { }
 
 	async showQuickPick(editor: IActiveNotebookEditor, wantedId?: string, skipAutoRun?: boolean): Promise<boolean> {
@@ -256,7 +254,6 @@ abstract class KernelPickerStrategyBase implements IKernelPickerStrategy {
 			await this._showKernelExtension(
 				this._extensionWorkbenchService,
 				this._extensionService,
-				this._extensionManagementServerService,
 				editor.textModel.viewType,
 				[]
 			);
@@ -265,7 +262,6 @@ abstract class KernelPickerStrategyBase implements IKernelPickerStrategy {
 			await this._showKernelExtension(
 				this._extensionWorkbenchService,
 				this._extensionService,
-				this._extensionManagementServerService,
 				editor.textModel.viewType,
 				pick.extensionIds,
 				this._productService.quality !== 'stable'
@@ -285,48 +281,33 @@ abstract class KernelPickerStrategyBase implements IKernelPickerStrategy {
 	protected async _showKernelExtension(
 		extensionWorkbenchService: IExtensionsWorkbenchService,
 		extensionService: IExtensionService,
-		extensionManagementServerService: IExtensionManagementServerService,
 		viewType: string,
 		extIds: string[],
 		isInsiders?: boolean
 	) {
 		// If extension id is provided attempt to install the extension as the user has requested the suggested ones be installed
 		const extensionsToInstall: IExtension[] = [];
-		const extensionsToInstallOnRemote: IExtension[] = [];
 		const extensionsToEnable: IExtension[] = [];
 
 		for (const extId of extIds) {
 			const extension = (await extensionWorkbenchService.getExtensions([{ id: extId }], CancellationToken.None))[0];
 			if (extension.enablementState === EnablementState.DisabledGlobally || extension.enablementState === EnablementState.DisabledWorkspace || extension.enablementState === EnablementState.DisabledByEnvironment) {
 				extensionsToEnable.push(extension);
-			} else if (!extensionWorkbenchService.installed.some(e => areSameExtensions(e.identifier, extension.identifier))) {
-				// Install this extension only if it hasn't already been installed.
+			} else {
 				const canInstall = await extensionWorkbenchService.canInstall(extension);
 				if (canInstall === true) {
 					extensionsToInstall.push(extension);
 				}
-			} else if (extensionManagementServerService.remoteExtensionManagementServer) {
-				// already installed, check if it should be installed on remote since we are not getting any kernels or kernel providers.
-				if (extensionWorkbenchService.installed.some(e => areSameExtensions(e.identifier, extension.identifier) && e.server === extensionManagementServerService.remoteExtensionManagementServer)) {
-					// extension exists on remote server. should not happen
-					continue;
-				} else {
-					// extension doesn't exist on remote server
-					const canInstall = await extensionWorkbenchService.canInstall(extension);
-					if (canInstall) {
-						extensionsToInstallOnRemote.push(extension);
-					}
-				}
 			}
 		}
 
-		if (extensionsToInstall.length || extensionsToEnable.length || extensionsToInstallOnRemote.length) {
+		if (extensionsToInstall.length || extensionsToEnable.length) {
 			await Promise.all([...extensionsToInstall.map(async extension => {
 				await extensionWorkbenchService.install(
 					extension,
 					{
 						installPreReleaseVersion: isInsiders ?? false,
-						context: { skipWalkthrough: true },
+						context: { skipWalkthrough: true }
 					},
 					ProgressLocation.Notification
 				);
@@ -344,8 +325,6 @@ abstract class KernelPickerStrategyBase implements IKernelPickerStrategy {
 					default:
 						break;
 				}
-			}), ...extensionsToInstallOnRemote.map(async extension => {
-				await extensionWorkbenchService.installInServer(extension, this._extensionManagementServerService.remoteExtensionManagementServer!);
 			})]);
 
 			await extensionService.activateByEvent(`onNotebook:${viewType}`);
@@ -456,7 +435,6 @@ export class KernelPickerMRUStrategy extends KernelPickerStrategyBase {
 		@ILogService _logService: ILogService,
 		@IExtensionsWorkbenchService _extensionWorkbenchService: IExtensionsWorkbenchService,
 		@IExtensionService _extensionService: IExtensionService,
-		@IExtensionManagementServerService _extensionManagementServerService: IExtensionManagementServerService,
 		@ICommandService _commandService: ICommandService,
 		@INotebookKernelHistoryService private readonly _notebookKernelHistoryService: INotebookKernelHistoryService,
 		@IOpenerService private readonly _openerService: IOpenerService
@@ -471,7 +449,6 @@ export class KernelPickerMRUStrategy extends KernelPickerStrategyBase {
 			_extensionWorkbenchService,
 			_extensionService,
 			_commandService,
-			_extensionManagementServerService,
 		);
 	}
 
@@ -632,7 +609,6 @@ export class KernelPickerMRUStrategy extends KernelPickerStrategyBase {
 				await this._showKernelExtension(
 					this._extensionWorkbenchService,
 					this._extensionService,
-					this._extensionManagementServerService,
 					editor.textModel.viewType,
 					[]
 				);
@@ -641,7 +617,6 @@ export class KernelPickerMRUStrategy extends KernelPickerStrategyBase {
 				await this._showKernelExtension(
 					this._extensionWorkbenchService,
 					this._extensionService,
-					this._extensionManagementServerService,
 					editor.textModel.viewType,
 					selectedKernelPickItem.extensionIds,
 					this._productService.quality !== 'stable'

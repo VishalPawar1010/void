@@ -125,6 +125,7 @@ export class TextAreaEditContext extends AbstractEditContext {
 	private _contentWidth: number;
 	private _contentHeight: number;
 	private _fontInfo: FontInfo;
+	private _lineHeight: number;
 	private _emptySelectionClipboard: boolean;
 	private _copyWithSyntaxHighlighting: boolean;
 
@@ -168,6 +169,7 @@ export class TextAreaEditContext extends AbstractEditContext {
 		this._contentWidth = layoutInfo.contentWidth;
 		this._contentHeight = layoutInfo.height;
 		this._fontInfo = options.get(EditorOption.fontInfo);
+		this._lineHeight = options.get(EditorOption.lineHeight);
 		this._emptySelectionClipboard = options.get(EditorOption.emptySelectionClipboard);
 		this._copyWithSyntaxHighlighting = options.get(EditorOption.copyWithSyntaxHighlighting);
 
@@ -589,6 +591,7 @@ export class TextAreaEditContext extends AbstractEditContext {
 		this._contentWidth = layoutInfo.contentWidth;
 		this._contentHeight = layoutInfo.height;
 		this._fontInfo = options.get(EditorOption.fontInfo);
+		this._lineHeight = options.get(EditorOption.lineHeight);
 		this._emptySelectionClipboard = options.get(EditorOption.emptySelectionClipboard);
 		this._copyWithSyntaxHighlighting = options.get(EditorOption.copyWithSyntaxHighlighting);
 		this.textArea.setAttribute('wrap', this._textAreaWrapping && !this._visibleTextArea ? 'on' : 'off');
@@ -742,8 +745,6 @@ export class TextAreaEditContext extends AbstractEditContext {
 				}
 
 				// Try to render the textarea with the color/font style to match the text under it
-				const viewPosition = this._context.viewModel.coordinatesConverter.convertViewPositionToModelPosition(new Position(startPosition.lineNumber, 1));
-				const lineHeight = this._context.viewLayout.getLineHeightForLineNumber(viewPosition.lineNumber);
 				const viewLineData = this._context.viewModel.getViewLineData(startPosition.lineNumber);
 				const startTokenIndex = viewLineData.tokens.findTokenIndexAtOffset(startPosition.column - 1);
 				const endTokenIndex = viewLineData.tokens.findTokenIndexAtOffset(endPosition.column - 1);
@@ -752,7 +753,7 @@ export class TextAreaEditContext extends AbstractEditContext {
 					(textareaSpansSingleToken ? viewLineData.tokens.getPresentation(startTokenIndex) : null)
 				);
 
-				this.textArea.domNode.scrollTop = lineCount * lineHeight;
+				this.textArea.domNode.scrollTop = lineCount * this._lineHeight;
 				this.textArea.domNode.scrollLeft = scrollLeft;
 
 				this._doRender({
@@ -760,7 +761,7 @@ export class TextAreaEditContext extends AbstractEditContext {
 					top: top,
 					left: left,
 					width: width,
-					height: lineHeight,
+					height: this._lineHeight,
 					useCover: false,
 					color: (TokenizationRegistry.getColorMap() || [])[presentation.foreground],
 					italic: presentation.italic,
@@ -797,21 +798,19 @@ export class TextAreaEditContext extends AbstractEditContext {
 		if (platform.isMacintosh || this._accessibilitySupport === AccessibilitySupport.Enabled) {
 			// For the popup emoji input, we will make the text area as high as the line height
 			// We will also make the fontSize and lineHeight the correct dimensions to help with the placement of these pickers
-			const lineNumber = this._primaryCursorPosition.lineNumber;
-			const lineHeight = this._context.viewLayout.getLineHeightForLineNumber(lineNumber);
 			this._doRender({
 				lastRenderPosition: this._primaryCursorPosition,
 				top,
 				left: this._textAreaWrapping ? this._contentLeft : left,
 				width: this._textAreaWidth,
-				height: lineHeight,
+				height: this._lineHeight,
 				useCover: false
 			});
 			// In case the textarea contains a word, we're going to try to align the textarea's cursor
 			// with our cursor by scrolling the textarea as much as possible
 			this.textArea.domNode.scrollLeft = this._primaryCursorVisibleRange.left;
 			const lineCount = this._textAreaInput.textAreaState.newlineCountBeforeSelection ?? newlinecount(this.textArea.domNode.value.substring(0, this.textArea.domNode.selectionStart));
-			this.textArea.domNode.scrollTop = lineCount * lineHeight;
+			this.textArea.domNode.scrollTop = lineCount * this._lineHeight;
 			return;
 		}
 
@@ -849,7 +848,6 @@ export class TextAreaEditContext extends AbstractEditContext {
 		ta.setLeft(renderData.left);
 		ta.setWidth(renderData.width);
 		ta.setHeight(renderData.height);
-		ta.setLineHeight(renderData.height);
 
 		ta.setColor(renderData.color ? Color.Format.CSS.formatHex(renderData.color) : '');
 		ta.setFontStyle(renderData.italic ? 'italic' : '');

@@ -99,8 +99,6 @@ export class TextFileEditorModelManager extends Disposable implements ITextFileE
 	) {
 		super();
 
-		this.saveParticipants = this._register(this.instantiationService.createInstance(TextFileSaveParticipant));
-
 		this.registerListeners();
 	}
 
@@ -560,7 +558,7 @@ export class TextFileEditorModelManager extends Disposable implements ITextFileE
 
 	//#region Save participants
 
-	private readonly saveParticipants: TextFileSaveParticipant;
+	private readonly saveParticipants = this._register(this.instantiationService.createInstance(TextFileSaveParticipant));
 
 	addSaveParticipant(participant: ITextFileSaveParticipant): IDisposable {
 		return this.saveParticipants.addSaveParticipant(participant);

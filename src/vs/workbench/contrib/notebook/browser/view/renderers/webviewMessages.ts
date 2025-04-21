@@ -305,7 +305,7 @@ export interface IUpdateRenderersMessage {
 }
 
 export interface IUpdateDecorationsMessage {
-	readonly type: 'decorations' | 'markupDecorations';
+	readonly type: 'decorations';
 	readonly cellId: string;
 	readonly addedClassNames: readonly string[];
 	readonly removedClassNames: readonly string[];

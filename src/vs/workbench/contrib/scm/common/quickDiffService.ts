@@ -25,16 +25,7 @@ function createProviderComparer(uri: URI): (a: QuickDiffProvider, b: QuickDiffPr
 		const bIsParent = isEqualOrParent(uri, b.rootUri!);
 
 		if (aIsParent && bIsParent) {
-			if (a.kind === 'primary') {
-				return -1;
-			} else if (b.kind === 'primary') {
-				return 1;
-			} else if (a.kind === 'secondary') {
-				return -1;
-			} else if (b.kind === 'secondary') {
-				return 1;
-			}
-			return 0;
+			return a.rootUri!.fsPath.length - b.rootUri!.fsPath.length;
 		} else if (aIsParent) {
 			return -1;
 		} else if (bIsParent) {
@@ -67,8 +58,8 @@ export class QuickDiffService extends Disposable implements IQuickDiffService {
 		};
 	}
 
-	private isQuickDiff(diff: { originalResource?: URI; label?: string }): diff is QuickDiff {
-		return !!diff.originalResource && (typeof diff.label === 'string');
+	private isQuickDiff(diff: { originalResource?: URI; label?: string; isSCM?: boolean }): diff is QuickDiff {
+		return !!diff.originalResource && (typeof diff.label === 'string') && (typeof diff.isSCM === 'boolean');
 	}
 
 	async getQuickDiffs(uri: URI, language: string = '', isSynchronized: boolean = false): Promise<QuickDiff[]> {
@@ -76,19 +67,17 @@ export class QuickDiffService extends Disposable implements IQuickDiffService {
 			.filter(provider => !provider.rootUri || this.uriIdentityService.extUri.isEqualOrParent(uri, provider.rootUri))
 			.sort(createProviderComparer(uri));
 
-		const quickDiffs = await Promise.all(providers.map(async provider => {
+		const diffs = await Promise.all(providers.map(async provider => {
 			const scoreValue = provider.selector ? score(provider.selector, uri, language, isSynchronized, undefined, undefined) : 10;
-			const originalResource = scoreValue > 0 ? await provider.getOriginalResource(uri) ?? undefined : undefined;
-
-			return {
-				originalResource,
+			const diff: Partial<QuickDiff> = {
+				originalResource: scoreValue > 0 ? await provider.getOriginalResource(uri) ?? undefined : undefined,
 				label: provider.label,
-				visible: provider.visible,
-				kind: provider.kind
-			} satisfies Partial<QuickDiff>;
+				isSCM: provider.isSCM,
+				visible: provider.visible
+			};
+			return diff;
 		}));
-
-		return quickDiffs.filter(this.isQuickDiff);
+		return diffs.filter<QuickDiff>(this.isQuickDiff);
 	}
 }
 

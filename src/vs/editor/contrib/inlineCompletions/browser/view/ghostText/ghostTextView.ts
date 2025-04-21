@@ -27,13 +27,10 @@ import { LineDecoration } from '../../../../../common/viewLayout/lineDecorations
 import { RenderLineInput, renderViewLine } from '../../../../../common/viewLayout/viewLineRenderer.js';
 import { InlineDecorationType } from '../../../../../common/viewModel.js';
 import { GhostText, GhostTextReplacement, IGhostTextLine } from '../../model/ghostText.js';
-import { RangeSingleLine } from '../../../../../common/core/rangeSingleLine.js';
-import { ColumnRange } from '../../../../../common/core/columnRange.js';
+import { ColumnRange } from '../../utils.js';
 import { addDisposableListener, getWindow, isHTMLElement, n } from '../../../../../../base/browser/dom.js';
 import './ghostTextView.css';
 import { IMouseEvent, StandardMouseEvent } from '../../../../../../base/browser/mouseEvent.js';
-import { CodeEditorWidget } from '../../../../../browser/widget/codeEditor/codeEditorWidget.js';
-import { TokenWithTextArray } from '../../../../../common/tokens/tokenWithTextArray.js';
 
 export interface IGhostTextWidgetModel {
 	readonly targetTextModel: IObservable<ITextModel | undefined>;
@@ -84,7 +81,7 @@ export class GhostTextView extends Disposable {
 					return;
 				}
 				const a = e.target.detail.injectedText?.options.attachedData;
-				if (a instanceof GhostTextAttachedData && a.owner === this) {
+				if (a instanceof GhostTextAttachedData) {
 					this._onDidClick.fire(e.event);
 				}
 			}));
@@ -172,7 +169,7 @@ export class GhostTextView extends Disposable {
 
 		const syntaxHighlightingEnabled = this._useSyntaxHighlighting.read(reader);
 		const extraClassNames = this._extraClassNames.read(reader);
-		const { inlineTexts, additionalLines, hiddenRange, additionalLinesOriginalSuffix } = computeGhostTextViewData(ghostText, textModel, GHOST_TEXT_CLASS_NAME + extraClassNames);
+		const { inlineTexts, additionalLines, hiddenRange } = computeGhostTextViewData(ghostText, textModel, GHOST_TEXT_CLASS_NAME + extraClassNames);
 
 		const currentLine = textModel.getLineContent(ghostText.lineNumber);
 		const edit = new OffsetEdit(inlineTexts.map(t => SingleOffsetEdit.insert(t.column - 1, t.text)));
@@ -180,18 +177,10 @@ export class GhostTextView extends Disposable {
 		const newRanges = edit.getNewTextRanges();
 		const inlineTextsWithTokens = inlineTexts.map((t, idx) => ({ ...t, tokens: tokens?.[0]?.getTokensInRange(newRanges[idx]) }));
 
-		const tokenizedAdditionalLines: LineData[] = additionalLines.map((l, idx) => {
-			let content = tokens?.[idx + 1] ?? LineTokens.createEmpty(l.content, this._languageService.languageIdCodec);
-			if (idx === additionalLines.length - 1 && additionalLinesOriginalSuffix) {
-				const t = TokenWithTextArray.fromLineTokens(textModel.tokenization.getLineTokens(additionalLinesOriginalSuffix.lineNumber));
-				const existingContent = t.slice(additionalLinesOriginalSuffix.columnRange.toZeroBasedOffsetRange());
-				content = TokenWithTextArray.fromLineTokens(content).append(existingContent).toLineTokens(content.languageIdCodec);
-			}
-			return {
-				content,
-				decorations: l.decorations,
-			};
-		});
+		const tokenizedAdditionalLines: LineData[] = additionalLines.map((l, idx) => ({
+			content: tokens?.[idx + 1] ?? LineTokens.createEmpty(l.content, this._languageService.languageIdCodec),
+			decorations: l.decorations,
+		}));
 
 		return {
 			replacedRange,
@@ -240,7 +229,7 @@ export class GhostTextView extends Disposable {
 							+ extraClassNames
 							+ p.lineDecorations.map(d => ' ' + d.className).join(' '), // TODO: take the ranges into account for line decorations
 						cursorStops: InjectedTextCursorStops.Left,
-						attachedData: new GhostTextAttachedData(this),
+						attachedData: new GhostTextAttachedData(),
 					},
 					showIfCollapsed: true,
 				}
@@ -269,9 +258,7 @@ export class GhostTextView extends Disposable {
 	);
 
 	private readonly _isInlineTextHovered = this._editorObs.isTargetHovered(
-		p => p.target.type === MouseTargetType.CONTENT_TEXT &&
-			p.target.detail.injectedText?.options.attachedData instanceof GhostTextAttachedData &&
-			p.target.detail.injectedText.options.attachedData.owner === this,
+		p => p.target.type === MouseTargetType.CONTENT_TEXT && p.target.detail.injectedText?.options.attachedData instanceof GhostTextAttachedData,
 		this._store
 	);
 
@@ -290,9 +277,7 @@ export class GhostTextView extends Disposable {
 	}
 }
 
-class GhostTextAttachedData {
-	constructor(public readonly owner: GhostTextView) { }
-}
+class GhostTextAttachedData { }
 
 interface WidgetDomElement {
 	ghostTextViewWarningWidgetData?: {
@@ -354,9 +339,8 @@ function computeGhostTextViewData(ghostText: GhostText | GhostTextReplacement, t
 
 		lastIdx = part.column - 1;
 	}
-	let additionalLinesOriginalSuffix: RangeSingleLine | undefined = undefined;
 	if (hiddenTextStartColumn !== undefined) {
-		additionalLinesOriginalSuffix = new RangeSingleLine(ghostText.lineNumber, new ColumnRange(lastIdx + 1, textBufferLine.length + 1));
+		addToAdditionalLines([{ line: textBufferLine.substring(lastIdx), lineDecorations: [] }], undefined);
 	}
 
 	const hiddenRange = hiddenTextStartColumn !== undefined ? new ColumnRange(hiddenTextStartColumn, textBufferLine.length + 1) : undefined;
@@ -365,7 +349,6 @@ function computeGhostTextViewData(ghostText: GhostText | GhostTextReplacement, t
 		inlineTexts,
 		additionalLines,
 		hiddenRange,
-		additionalLinesOriginalSuffix,
 	};
 }
 
@@ -397,8 +380,6 @@ export class AdditionalLinesWidget extends Disposable {
 		this._store
 	);
 
-	private hasBeenAccepted = false;
-
 	constructor(
 		private readonly _editor: ICodeEditor,
 		private readonly _lines: IObservable<{
@@ -412,17 +393,12 @@ export class AdditionalLinesWidget extends Disposable {
 	) {
 		super();
 
-		if (this._editor instanceof CodeEditorWidget && this._shouldKeepCursorStable) {
-			this._register(this._editor.onBeforeExecuteEdit(e => this.hasBeenAccepted = e.source === 'inlineSuggestion.accept'));
-		}
-
 		this._register(autorun(reader => {
 			/** @description update view zone */
 			const lines = this._lines.read(reader);
 			this.editorOptionsChanged.read(reader);
 
 			if (lines) {
-				this.hasBeenAccepted = false;
 				this.updateLines(lines.lineNumber, lines.additionalLines, lines.minReservedLineCount);
 			} else {
 				this.clear();
@@ -499,9 +475,7 @@ export class AdditionalLinesWidget extends Disposable {
 		if (this._viewZoneInfo) {
 			changeAccessor.removeZone(this._viewZoneInfo.viewZoneId);
 
-			if (!this.hasBeenAccepted) {
-				this.keepCursorStable(this._viewZoneInfo.lineNumber, -this._viewZoneInfo.heightInLines);
-			}
+			this.keepCursorStable(this._viewZoneInfo.lineNumber, -this._viewZoneInfo.heightInLines);
 
 			this._viewZoneInfo = undefined;
 			this._viewZoneHeight.set(undefined, undefined);

@@ -5,15 +5,11 @@
 
 import { LogLevel as MsalLogLevel } from '@azure/msal-node';
 import { env, LogLevel, LogOutputChannel } from 'vscode';
-import { MicrosoftAuthenticationTelemetryReporter } from './telemetryReporter';
 
 export class MsalLoggerOptions {
 	piiLoggingEnabled = false;
 
-	constructor(
-		private readonly _output: LogOutputChannel,
-		private readonly _telemtryReporter: MicrosoftAuthenticationTelemetryReporter
-	) { }
+	constructor(private readonly _output: LogOutputChannel) { }
 
 	get logLevel(): MsalLogLevel {
 		return this._toMsalLogLevel(env.logLevel);
@@ -31,7 +27,6 @@ export class MsalLoggerOptions {
 		switch (level) {
 			case MsalLogLevel.Error:
 				this._output.error(message);
-				this._telemtryReporter.sendTelemetryErrorEvent(message);
 				return;
 			case MsalLogLevel.Warning:
 				this._output.warn(message);

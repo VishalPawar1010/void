@@ -51,13 +51,13 @@ export abstract class AbstractTextFileService extends Disposable implements ITex
 	private static readonly TEXTFILE_SAVE_CREATE_SOURCE = SaveSourceRegistry.registerSource('textFileCreate.source', localize('textFileCreate.source', "File Created"));
 	private static readonly TEXTFILE_SAVE_REPLACE_SOURCE = SaveSourceRegistry.registerSource('textFileOverwrite.source', localize('textFileOverwrite.source', "File Replaced"));
 
-	readonly files: ITextFileEditorModelManager;
+	readonly files: ITextFileEditorModelManager = this._register(this.instantiationService.createInstance(TextFileEditorModelManager));
 
-	readonly untitled: IUntitledTextEditorModelManager;
+	readonly untitled: IUntitledTextEditorModelManager = this.untitledTextEditorService;
 
 	constructor(
 		@IFileService protected readonly fileService: IFileService,
-		@IUntitledTextEditorService untitledTextEditorService: IUntitledTextEditorModelManager,
+		@IUntitledTextEditorService private untitledTextEditorService: IUntitledTextEditorModelManager,
 		@ILifecycleService protected readonly lifecycleService: ILifecycleService,
 		@IInstantiationService protected readonly instantiationService: IInstantiationService,
 		@IModelService private readonly modelService: IModelService,
@@ -76,9 +76,6 @@ export abstract class AbstractTextFileService extends Disposable implements ITex
 		@IDecorationsService private readonly decorationsService: IDecorationsService
 	) {
 		super();
-
-		this.files = this._register(this.instantiationService.createInstance(TextFileEditorModelManager));
-		this.untitled = untitledTextEditorService;
 
 		this.provideDecorations();
 	}
@@ -273,6 +270,11 @@ export abstract class AbstractTextFileService extends Disposable implements ITex
 		return this.fileService.writeFile(resource, readable, options);
 	}
 
+	getEncoding(resource: URI): string {
+		const model = resource.scheme === Schemas.untitled ? this.untitled.get(resource) : this.files.get(resource);
+		return model?.getEncoding() ?? this.encoding.getUnvalidatedEncodingForResource(resource);
+	}
+
 	async getEncodedReadable(resource: URI | undefined, value: ITextSnapshot): Promise<VSBufferReadable>;
 	async getEncodedReadable(resource: URI | undefined, value: string): Promise<VSBuffer | VSBufferReadable>;
 	async getEncodedReadable(resource: URI | undefined, value?: ITextSnapshot): Promise<VSBufferReadable | undefined>;
@@ -312,35 +314,12 @@ export abstract class AbstractTextFileService extends Disposable implements ITex
 			candidateGuessEncodings:
 				options?.candidateGuessEncodings ||
 				this.textResourceConfigurationService.getValue(resource, 'files.candidateGuessEncodings'),
-			overwriteEncoding: async detectedEncoding => this.validateDetectedEncoding(resource, detectedEncoding ?? undefined, options)
+			overwriteEncoding: async detectedEncoding => {
+				const { encoding } = await this.encoding.getPreferredReadEncoding(resource, options, detectedEncoding ?? undefined);
+
+				return encoding;
+			}
 		});
-	}
-
-	getEncoding(resource: URI): string {
-		const model = resource.scheme === Schemas.untitled ? this.untitled.get(resource) : this.files.get(resource);
-		return model?.getEncoding() ?? this.encoding.getUnvalidatedEncodingForResource(resource);
-	}
-
-	async resolveDecoding(resource: URI | undefined, options?: IReadTextFileEncodingOptions): Promise<{ preferredEncoding: string; guessEncoding: boolean; candidateGuessEncodings: string[] }> {
-		return {
-			preferredEncoding: (await this.encoding.getPreferredReadEncoding(resource, options, undefined)).encoding,
-			guessEncoding:
-				options?.autoGuessEncoding ||
-				this.textResourceConfigurationService.getValue(resource, 'files.autoGuessEncoding'),
-			candidateGuessEncodings:
-				options?.candidateGuessEncodings ||
-				this.textResourceConfigurationService.getValue(resource, 'files.candidateGuessEncodings'),
-		};
-	}
-
-	async validateDetectedEncoding(resource: URI | undefined, detectedEncoding: string | undefined, options?: IReadTextFileEncodingOptions): Promise<string> {
-		const { encoding } = await this.encoding.getPreferredReadEncoding(resource, options, detectedEncoding);
-
-		return encoding;
-	}
-
-	resolveEncoding(resource: URI | undefined, options?: IWriteTextFileOptions): Promise<{ encoding: string; addBOM: boolean }> {
-		return this.encoding.getWriteEncoding(resource, options);
 	}
 
 	//#endregion

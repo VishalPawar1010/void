@@ -27,7 +27,7 @@ export class BackupMainService implements IBackupMainService {
 
 	private static readonly backupWorkspacesMetadataStorageKey = 'backupWorkspaces';
 
-	protected backupHome: string;
+	protected backupHome = this.environmentMainService.backupHome;
 
 	private workspaces: IWorkspaceBackupInfo[] = [];
 	private folders: IFolderBackupInfo[] = [];
@@ -40,12 +40,11 @@ export class BackupMainService implements IBackupMainService {
 	private readonly backupPathComparer = { isEqual: (pathA: string, pathB: string) => isEqual(pathA, pathB, !isLinux) };
 
 	constructor(
-		@IEnvironmentMainService environmentMainService: IEnvironmentMainService,
+		@IEnvironmentMainService private readonly environmentMainService: IEnvironmentMainService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@ILogService private readonly logService: ILogService,
 		@IStateService private readonly stateService: IStateService
 	) {
-		this.backupHome = environmentMainService.backupHome;
 	}
 
 	async initialize(): Promise<void> {

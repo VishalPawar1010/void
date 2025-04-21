@@ -144,13 +144,7 @@ export class TextSearchResultRenderer extends Disposable implements ICompressibl
 			SearchContext.FileFocusKey.bindTo(templateData.contextKeyService).set(false);
 			SearchContext.FolderFocusKey.bindTo(templateData.contextKeyService).set(false);
 		} else {
-			let aiName = 'Copilot';
-			try {
-				aiName = (await node.element.parent().searchModel.getAITextResultProviderName()) || 'Copilot';
-			} catch {
-				// ignore
-			}
-
+			const aiName = await node.element.parent().searchModel.getAITextResultProviderName();
 			const localizedLabel = nls.localize({
 				key: 'searchFolderMatch.aiText.label',
 				comment: ['This is displayed before the AI text search results, where {0} will be in the place of the AI name (ie: Copilot)']

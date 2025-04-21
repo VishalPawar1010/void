@@ -179,10 +179,6 @@ export class MockSession implements IDebugSession {
 	readonly suppressDebugView = false;
 	readonly autoExpandLazyVariables = false;
 
-	dispose(): void {
-
-	}
-
 	getMemory(memoryReference: string): IMemoryRegion {
 		throw new Error('Method not implemented.');
 	}
@@ -197,10 +193,6 @@ export class MockSession implements IDebugSession {
 
 	writeMemory(memoryReference: string, offset: number, data: string, allowPartial?: boolean): Promise<DebugProtocol.WriteMemoryResponse | undefined> {
 		throw new Error('Method not implemented.');
-	}
-
-	cancelCorrelatedTestRun(): void {
-
 	}
 
 	get compoundRoot(): DebugCompoundRoot | undefined {

@@ -79,7 +79,7 @@ export class CellEditorStatusBar extends CellContentPart {
 			readonly showHover = (options: IHoverDelegateOptions) => {
 				options.position = options.position ?? {};
 				options.position.hoverPosition = HoverPosition.ABOVE;
-				return hoverService.showInstantHover(options);
+				return hoverService.showHover(options);
 			};
 
 			readonly placement = 'element';

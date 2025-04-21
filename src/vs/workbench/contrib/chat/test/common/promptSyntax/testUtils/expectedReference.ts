@@ -7,8 +7,8 @@ import assert from 'assert';
 import { URI } from '../../../../../../../base/common/uri.js';
 import { Range } from '../../../../../../../editor/common/core/range.js';
 import { assertDefined } from '../../../../../../../base/common/types.js';
-import { ResolveError } from '../../../../common/promptFileReferenceErrors.js';
-import { IPromptReference } from '../../../../common/promptSyntax/parsers/types.js';
+import { ParseError } from '../../../../common/promptFileReferenceErrors.js';
+import { IPromptFileReference } from '../../../../common/promptSyntax/parsers/types.js';
 import { TErrorCondition } from '../../../../common/promptSyntax/parsers/basePromptParser.js';
 
 /**
@@ -63,7 +63,7 @@ export class ExpectedReference {
 	/**
 	 * Validate that the provided reference is equal to this object.
 	 */
-	public validateEqual(other: IPromptReference) {
+	public validateEqual(other: IPromptFileReference) {
 		const { uri, text, path, childrenOrError = [] } = this.options;
 		const errorPrefix = `[${uri}] `;
 
@@ -130,7 +130,7 @@ export class ExpectedReference {
 		 * Next validate children or error condition.
 		 */
 
-		if (childrenOrError instanceof ResolveError) {
+		if (childrenOrError instanceof ParseError) {
 			const error = childrenOrError;
 			const { errorCondition } = other;
 			assertDefined(
@@ -139,8 +139,8 @@ export class ExpectedReference {
 			);
 
 			assert(
-				errorCondition instanceof ResolveError,
-				`${errorPrefix} Expected 'errorCondition' to be a 'ResolveError'.`,
+				errorCondition instanceof ParseError,
+				`${errorPrefix} Expected 'errorCondition' to be a 'ParseError'.`,
 			);
 
 			assert(
@@ -155,14 +155,7 @@ export class ExpectedReference {
 		const { references } = other;
 
 		for (let i = 0; i < children.length; i++) {
-			const reference = references[i];
-
-			assertDefined(
-				reference,
-				`${errorPrefix} Expected reference #${i} be ${children[i]}, got 'undefined'.`,
-			);
-
-			children[i].validateEqual(reference);
+			children[i].validateEqual(references[i]);
 		}
 
 		if (references.length > children.length) {
@@ -188,12 +181,5 @@ export class ExpectedReference {
 
 			throw new Error(`${errorPrefix} Expected another reference '${expectedReference.options.text}', got 'undefined'.`);
 		}
-	}
-
-	/**
-	 * Returns a string representation of the reference.
-	 */
-	public toString(): string {
-		return `expected-reference/${this.options.text}`;
 	}
 }

@@ -107,7 +107,6 @@ export interface ISearchModel {
 	};
 	cancelSearch(cancelledForNewSearch?: boolean): boolean;
 	cancelAISearch(cancelledForNewSearch?: boolean): boolean;
-	clearAiSearchResults(): void;
 	dispose(): void;
 }
 
@@ -169,7 +168,7 @@ export interface ITextSearchHeading {
 	rangeHighlightDecorations: RangeHighlightDecorations;
 	fileCount(): number;
 	count(): number;
-	clear(clearAll: boolean): void;
+	clear(): void;
 	dispose(): void;
 }
 
@@ -334,13 +333,6 @@ export function isSearchTreeMatch(obj: any): obj is ISearchTreeMatch {
 		obj !== null &&
 		typeof obj.id === 'function' &&
 		obj.id().startsWith(MATCH_PREFIX);
-}
-
-export function isSearchHeader(obj: any): boolean {
-	return typeof obj === 'object' &&
-		obj !== null &&
-		typeof obj.id === 'function' &&
-		obj.id().startsWith(TEXT_SEARCH_HEADING_PREFIX);
 }
 
 export function getFileMatches(matches: (ISearchTreeFileMatch | ISearchTreeFolderMatchWithResource)[]): ISearchTreeFileMatch[] {

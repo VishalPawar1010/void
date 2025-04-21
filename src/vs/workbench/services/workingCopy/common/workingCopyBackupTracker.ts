@@ -39,8 +39,6 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 	) {
 		super();
 
-		this.whenReady = this.resolveBackupsToRestore();
-
 		// Fill in initial modified working copies
 		for (const workingCopy of this.workingCopyService.modifiedWorkingCopies) {
 			this.onDidRegister(workingCopy);
@@ -337,7 +335,7 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 	//#region Backup Restorer
 
 	protected readonly unrestoredBackups = new Set<IWorkingCopyIdentifier>();
-	protected readonly whenReady: Promise<void>;
+	protected readonly whenReady = this.resolveBackupsToRestore();
 
 	private _isReady = false;
 	protected get isReady(): boolean { return this._isReady; }

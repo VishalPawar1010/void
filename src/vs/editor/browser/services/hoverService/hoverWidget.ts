@@ -61,7 +61,6 @@ export class HoverWidget extends Widget implements IHoverWidget {
 	private _isLocked: boolean = false;
 	private _enableFocusTraps: boolean = false;
 	private _addedFocusTrap: boolean = false;
-	private _maxHeightRatioRelativeToWindow: number = 0.5;
 
 	private get _targetWindow(): Window {
 		return dom.getWindow(this._target.targetElements[0]);
@@ -126,11 +125,6 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		}
 		if (options.trapFocus) {
 			this._enableFocusTraps = true;
-		}
-
-		const maxHeightRatio = options.appearance?.maxHeightRatio;
-		if (maxHeightRatio !== undefined && maxHeightRatio > 0 && maxHeightRatio <= 1) {
-			this._maxHeightRatioRelativeToWindow = maxHeightRatio;
 		}
 
 		// Default to position above when the position is unspecified or a mouse event
@@ -557,7 +551,7 @@ export class HoverWidget extends Widget implements IHoverWidget {
 	}
 
 	private adjustHoverMaxHeight(target: TargetRect): void {
-		let maxHeight = this._targetWindow.innerHeight * this._maxHeightRatioRelativeToWindow;
+		let maxHeight = this._targetWindow.innerHeight / 2;
 
 		// When force position is enabled, restrict max height
 		if (this._forcePosition) {

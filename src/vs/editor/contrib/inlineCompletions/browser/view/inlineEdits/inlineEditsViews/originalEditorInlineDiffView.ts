@@ -10,19 +10,24 @@ import { autorunWithStore, derived, IObservable, observableFromEvent } from '../
 import { ICodeEditor, MouseTargetType } from '../../../../../../browser/editorBrowser.js';
 import { observableCodeEditor } from '../../../../../../browser/observableCodeEditor.js';
 import { rangeIsSingleLine } from '../../../../../../browser/widget/diffEditor/components/diffEditorViewZones/diffEditorViewZones.js';
+import { LineSource, renderLines, RenderOptions } from '../../../../../../browser/widget/diffEditor/components/diffEditorViewZones/renderLines.js';
+import { diffAddDecoration } from '../../../../../../browser/widget/diffEditor/registrations.contribution.js';
+import { applyViewZones, IObservableViewZone } from '../../../../../../browser/widget/diffEditor/utils.js';
+import { EditorOption } from '../../../../../../common/config/editorOptions.js';
 import { OffsetRange } from '../../../../../../common/core/offsetRange.js';
 import { Range } from '../../../../../../common/core/range.js';
 import { AbstractText } from '../../../../../../common/core/textEdit.js';
 import { DetailedLineRangeMapping } from '../../../../../../common/diff/rangeMapping.js';
 import { EndOfLinePreference, IModelDeltaDecoration, InjectedTextCursorStops, ITextModel } from '../../../../../../common/model.js';
 import { ModelDecorationOptions } from '../../../../../../common/model/textModel.js';
+import { InlineDecoration, InlineDecorationType } from '../../../../../../common/viewModel.js';
 import { IInlineEditsView } from '../inlineEditsViewInterface.js';
 import { classNames } from '../utils/utils.js';
 
 export interface IOriginalEditorInlineDiffViewState {
 	diff: DetailedLineRangeMapping[];
 	modifiedText: AbstractText;
-	mode: 'insertionInline' | 'sideBySide' | 'deletion';
+	mode: 'mixedLines' | 'insertionInline' | 'interleavedLines' | 'sideBySide' | 'deletion';
 
 	modifiedCodeEditor: ICodeEditor;
 }
@@ -36,9 +41,7 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 	readonly onDidClick = this._onDidClick.event;
 
 	readonly isHovered = observableCodeEditor(this._originalEditor).isTargetHovered(
-		p => p.target.type === MouseTargetType.CONTENT_TEXT &&
-			p.target.detail.injectedText?.options.attachedData instanceof InlineEditAttachedData &&
-			p.target.detail.injectedText.options.attachedData.owner === this,
+		p => p.target.type === MouseTargetType.CONTENT_TEXT && p.target.detail.injectedText?.options.attachedData instanceof InlineEditAttachedData,
 		this._store
 	);
 
@@ -61,15 +64,68 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 			}
 		}));
 
+		const editor = observableCodeEditor(this._originalEditor);
+
 		this._register(this._originalEditor.onMouseUp(e => {
 			if (e.target.type !== MouseTargetType.CONTENT_TEXT) {
 				return;
 			}
 			const a = e.target.detail.injectedText?.options.attachedData;
-			if (a instanceof InlineEditAttachedData && a.owner === this) {
+			if (a instanceof InlineEditAttachedData) {
 				this._onDidClick.fire(e.event);
 			}
 		}));
+
+		const originalViewZones = derived(this, (reader) => {
+			const originalModel = editor.model.read(reader);
+			if (!originalModel) { return []; }
+
+			const origViewZones: IObservableViewZone[] = [];
+			const renderOptions = RenderOptions.fromEditor(this._originalEditor);
+			const modLineHeight = editor.getOption(EditorOption.lineHeight).read(reader);
+
+			const s = this._state.read(reader);
+			if (!s) { return origViewZones; }
+
+			for (const diff of s.diff) {
+				if (s.mode !== 'interleavedLines') {
+					continue;
+				}
+
+				this._tokenizationFinished.read(reader); // Update view-zones once tokenization completes
+
+				const source = new LineSource(diff.modified.mapToLineArray(l => this._modifiedTextModel.tokenization.getLineTokens(l)));
+
+				const decorations: InlineDecoration[] = [];
+				for (const i of diff.innerChanges || []) {
+					decorations.push(new InlineDecoration(
+						i.modifiedRange.delta(-(diff.original.startLineNumber - 1)),
+						diffAddDecoration.className!,
+						InlineDecorationType.Regular,
+					));
+				}
+
+				const deletedCodeDomNode = document.createElement('div');
+				deletedCodeDomNode.classList.add('view-lines', 'line-insert', 'monaco-mouse-cursor-text');
+				// .inline-deleted-margin-view-zone
+
+				const result = renderLines(source, renderOptions, decorations, deletedCodeDomNode);
+
+				origViewZones.push({
+					afterLineNumber: diff.original.endLineNumberExclusive - 1,
+					domNode: deletedCodeDomNode,
+					heightInPx: result.heightInLines * modLineHeight,
+					minWidthInPx: result.minWidthInPx,
+
+					showInHiddenAreas: true,
+					suppressMouseDown: true,
+				});
+			}
+
+			return origViewZones;
+		});
+
+		this._register(applyViewZones(this._originalEditor, originalViewZones));
 	}
 
 	private readonly _decorations = derived(this, reader => {
@@ -77,8 +133,7 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 		if (!diff) { return undefined; }
 
 		const modified = diff.modifiedText;
-		const showInline = diff.mode === 'insertionInline';
-		const hasOneInnerChange = diff.diff.length === 1 && diff.diff[0].innerChanges?.length === 1;
+		const showInline = diff.mode === 'mixedLines' || diff.mode === 'insertionInline';
 
 		const showEmptyDecorations = true;
 
@@ -123,7 +178,7 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 		});
 
 		for (const m of diff.diff) {
-			const showFullLineDecorations = diff.mode !== 'sideBySide' && diff.mode !== 'deletion' && diff.mode !== 'insertionInline';
+			const showFullLineDecorations = diff.mode !== 'sideBySide';
 			if (showFullLineDecorations) {
 				if (!m.original.isEmpty) {
 					originalDecorations.push({
@@ -161,7 +216,7 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 									'inlineCompletions-char-delete',
 									i.originalRange.isSingleLine() && diff.mode === 'insertionInline' && 'single-line-inline',
 									i.originalRange.isEmpty() && 'empty',
-									((i.originalRange.isEmpty() && hasOneInnerChange || diff.mode === 'deletion' && replacedText === '\n') && showEmptyDecorations && !useInlineDiff) && 'diff-range-empty'
+									((i.originalRange.isEmpty() || diff.mode === 'deletion' && replacedText === '\n') && showEmptyDecorations && !useInlineDiff) && 'diff-range-empty'
 								),
 								inlineClassName: useInlineDiff ? classNames('strike-through', 'inlineCompletions') : null,
 								zIndex: 1
@@ -171,7 +226,7 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 					if (m.modified.contains(i.modifiedRange.startLineNumber)) {
 						modifiedDecorations.push({
 							range: i.modifiedRange,
-							options: (i.modifiedRange.isEmpty() && showEmptyDecorations && !useInlineDiff && hasOneInnerChange)
+							options: (i.modifiedRange.isEmpty() && showEmptyDecorations && !useInlineDiff)
 								? diffAddDecorationEmpty
 								: diffAddDecoration
 						});
@@ -208,7 +263,7 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 											...extraClasses // include extraClasses for additional styling if provided
 										),
 										cursorStops: InjectedTextCursorStops.None,
-										attachedData: new InlineEditAttachedData(this),
+										attachedData: new InlineEditAttachedData(),
 									},
 									zIndex: 2,
 									showIfCollapsed: true,
@@ -225,7 +280,6 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 }
 
 class InlineEditAttachedData {
-	constructor(public readonly owner: OriginalEditorInlineDiffView) { }
 }
 
 function allowsTrueInlineDiffRendering(mapping: DetailedLineRangeMapping): boolean {

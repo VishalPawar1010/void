@@ -44,9 +44,9 @@ export class EditorParts extends MultiWindowParts<EditorPart> implements IEditor
 
 	declare readonly _serviceBrand: undefined;
 
-	readonly mainPart: MainEditorPart;
+	readonly mainPart = this._register(this.createMainEditorPart());
 
-	private mostRecentActiveParts: MainEditorPart[];
+	private mostRecentActiveParts = [this.mainPart];
 
 	constructor(
 		@IInstantiationService protected readonly instantiationService: IInstantiationService,
@@ -57,10 +57,7 @@ export class EditorParts extends MultiWindowParts<EditorPart> implements IEditor
 	) {
 		super('workbench.editorParts', themeService, storageService);
 
-		this.mainPart = this._register(this.createMainEditorPart());
 		this._register(this.registerPart(this.mainPart));
-
-		this.mostRecentActiveParts = [this.mainPart];
 
 		this.restoreParts();
 		this.registerListeners();

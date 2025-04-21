@@ -7,7 +7,7 @@ import { localize } from '../../../../nls.js';
 import { CancellationToken, CancellationTokenSource } from '../../../../base/common/cancellation.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
-import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IHostService } from '../../../services/host/browser/host.js';
 import { DeferredPromise } from '../../../../base/common/async.js';
@@ -58,21 +58,17 @@ export class SpeechService extends Disposable implements ISpeechService {
 	private readonly providers = new Map<string, ISpeechProvider>();
 	private readonly providerDescriptors = new Map<string, ISpeechProviderDescriptor>();
 
-	private readonly hasSpeechProviderContext: IContextKey<boolean>;
+	private readonly hasSpeechProviderContext = HasSpeechProvider.bindTo(this.contextKeyService);
 
 	constructor(
 		@ILogService private readonly logService: ILogService,
-		@IContextKeyService contextKeyService: IContextKeyService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IHostService private readonly hostService: IHostService,
 		@ITelemetryService private readonly telemetryService: ITelemetryService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IExtensionService private readonly extensionService: IExtensionService
 	) {
 		super();
-
-		this.hasSpeechProviderContext = HasSpeechProvider.bindTo(contextKeyService);
-		this.textToSpeechInProgress = TextToSpeechInProgress.bindTo(contextKeyService);
-		this.speechToTextInProgress = SpeechToTextInProgress.bindTo(contextKeyService);
 
 		this.handleAndRegisterSpeechExtensions();
 	}
@@ -140,7 +136,7 @@ export class SpeechService extends Disposable implements ISpeechService {
 	private activeSpeechToTextSessions = 0;
 	get hasActiveSpeechToTextSession() { return this.activeSpeechToTextSessions > 0; }
 
-	private readonly speechToTextInProgress: IContextKey<boolean>;
+	private readonly speechToTextInProgress = SpeechToTextInProgress.bindTo(this.contextKeyService);
 
 	async createSpeechToTextSession(token: CancellationToken, context: string = 'speech'): Promise<ISpeechToTextSession> {
 		const provider = await this.getProvider();
@@ -253,7 +249,7 @@ export class SpeechService extends Disposable implements ISpeechService {
 	private activeTextToSpeechSessions = 0;
 	get hasActiveTextToSpeechSession() { return this.activeTextToSpeechSessions > 0; }
 
-	private readonly textToSpeechInProgress: IContextKey<boolean>;
+	private readonly textToSpeechInProgress = TextToSpeechInProgress.bindTo(this.contextKeyService);
 
 	async createTextToSpeechSession(token: CancellationToken, context: string = 'speech'): Promise<ITextToSpeechSession> {
 		const provider = await this.getProvider();

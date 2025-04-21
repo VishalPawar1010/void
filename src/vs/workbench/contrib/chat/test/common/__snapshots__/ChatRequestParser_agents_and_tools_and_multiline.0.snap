@@ -22,7 +22,6 @@
         extensionDisplayName: "",
         extensionPublisherId: "",
         locations: [ "panel" ],
-        modes: [ "ask" ],
         metadata: {  },
         slashCommands: [
           {

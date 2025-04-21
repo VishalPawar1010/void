@@ -6,36 +6,19 @@
 import { IMouseEvent } from '../../../../../../base/browser/mouseEvent.js';
 import { Event } from '../../../../../../base/common/event.js';
 import { IObservable } from '../../../../../../base/common/observable.js';
-import { Command, InlineCompletionDisplayLocation } from '../../../../../common/languages.js';
-import { InlineEditWithChanges } from './inlineEditWithChanges.js';
-
-export enum InlineEditTabAction {
-	Jump = 'jump',
-	Accept = 'accept',
-	Inactive = 'inactive'
-}
+import { Command } from '../../../../../common/languages.js';
+import { InlineEditTabAction } from './utils/utils.js';
 
 export interface IInlineEditsView {
 	isHovered: IObservable<boolean>;
 	onDidClick: Event<IMouseEvent>;
 }
 
-export interface IInlineEditHost {
-	readonly onDidAccept: Event<void>;
-	inAcceptFlow: IObservable<boolean>;
-}
-
-export interface IInlineEditModel {
-	displayName: string;
-	action: Command | undefined;
-	extensionCommands: Command[];
-	inlineEdit: InlineEditWithChanges;
+export interface IInlineEditsViewHost {
+	displayName: IObservable<string>;
+	action: IObservable<Command | undefined>;
 	tabAction: IObservable<InlineEditTabAction>;
-	showCollapsed: IObservable<boolean>;
-	displayLocation: InlineCompletionDisplayLocation | undefined;
-
-	handleInlineEditShown(): void;
+	extensionCommands: IObservable<readonly Command[] | undefined>;
 	accept(): void;
 	jump(): void;
-	abort(reason: string): void;
 }

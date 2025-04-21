@@ -630,11 +630,10 @@ class LanguageServiceHost implements ts.LanguageServiceHost {
 	}
 
 	removeScriptSnapshot(filename: string): boolean {
-		filename = normalize(filename);
-		this._log('removeScriptSnapshot', filename);
 		this._filesInProject.delete(filename);
 		this._filesAdded.delete(filename);
 		this._projectVersion++;
+		filename = normalize(filename);
 		delete this._fileNameToDeclaredModule[filename];
 		return delete this._snapshots[filename];
 	}
@@ -707,9 +706,7 @@ class LanguageServiceHost implements ts.LanguageServiceHost {
 				// node module?
 				return;
 			}
-			if (ref.fileName.endsWith('.css')) {
-				return;
-			}
+
 
 			const stopDirname = normalize(this.getCurrentDirectory());
 			let dirname = filename;

@@ -17,28 +17,24 @@ export interface IViewPortChangeEvent {
 }
 
 export class TreeSitterCodeEditors extends Disposable {
-	private readonly _textModels = new Set<ITextModel>();
-	private readonly _languageEditors = this._register(new DisposableMap<ICodeEditor>);
+	private readonly _languageEditors = this._register(new DisposableMap<ICodeEditor>());
 	private readonly _allEditors = this._register(new DisposableMap<ICodeEditor>());
 	private readonly _onDidChangeViewport = this._register(new Emitter<IViewPortChangeEvent>());
 	public readonly onDidChangeViewport = this._onDidChangeViewport.event;
+	private readonly _onDidRemoveEditor = this._register(new Emitter<ITextModel>());
+	public readonly onDidRemoveEditor = this._onDidRemoveEditor.event;
 
 	constructor(private readonly _languageId: string,
 		@ICodeEditorService private readonly _codeEditorService: ICodeEditorService,
 		@ITreeSitterParserService private readonly _treeSitterParserService: ITreeSitterParserService) {
-
 		super();
 		this._register(this._codeEditorService.onCodeEditorAdd(this._onCodeEditorAdd, this));
 		this._register(this._codeEditorService.onCodeEditorRemove(this._onCodeEditorRemove, this));
 		this._codeEditorService.listCodeEditors().forEach(this._onCodeEditorAdd, this);
 	}
 
-	get textModels(): ITextModel[] {
-		return Array.from(this._textModels.keys());
-	}
-
-	getEditorForModel(model: ITextModel): ICodeEditor | undefined {
-		return this._codeEditorService.listCodeEditors().find(editor => editor.getModel() === model);
+	get editors(): ICodeEditor[] {
+		return Array.from(this._languageEditors.keys());
 	}
 
 	public async getInitialViewPorts(): Promise<IViewPortChangeEvent[]> {
@@ -47,7 +43,7 @@ export class TreeSitterCodeEditors extends Disposable {
 		const viewports: IViewPortChangeEvent[] = [];
 		for (const editor of editors) {
 			const model = await this.getEditorModel(editor);
-			if (model && model.getLanguageId() === this._languageId) {
+			if (model) {
 				viewports.push({
 					model,
 					ranges: this._nonIntersectingViewPortRanges(editor)
@@ -58,7 +54,7 @@ export class TreeSitterCodeEditors extends Disposable {
 	}
 
 	private _onCodeEditorRemove(editor: ICodeEditor): void {
-		this._allEditors.deleteAndDispose(editor);
+		this._languageEditors.deleteAndDispose(editor);
 	}
 
 	private async getEditorModel(editor: ICodeEditor): Promise<ITextModel | undefined> {
@@ -72,47 +68,39 @@ export class TreeSitterCodeEditors extends Disposable {
 	}
 
 	private async _onCodeEditorAdd(editor: ICodeEditor): Promise<void> {
-		const otherEditorDisposables = new DisposableStore();
-		otherEditorDisposables.add(editor.onDidChangeModel(() => this._onDidChangeModel(editor, editor.getModel()), this));
-		this._allEditors.set(editor, otherEditorDisposables);
-
-		const model = editor.getModel();
+		const model = await this.getEditorModel(editor);
 		if (model) {
+			const otherEditorDisposables = new DisposableStore();
+			otherEditorDisposables.add(model.onDidChangeLanguage(() => this._onLanguageChange(editor, model), this));
+			this._allEditors.set(editor, otherEditorDisposables);
+
 			this._tryAddEditor(editor, model);
 		}
 	}
 
 	private _tryAddEditor(editor: ICodeEditor, model: ITextModel): void {
 		const language = model.getLanguageId();
-		if ((language === this._languageId)) {
-			if (!this._textModels.has(model)) {
-				this._textModels.add(model);
-			}
-			if (!this._languageEditors.has(editor)) {
-				const langaugeEditorDisposables = new DisposableStore();
-				langaugeEditorDisposables.add(editor.onDidScrollChange(() => this._onViewportChange(editor), this));
-				this._languageEditors.set(editor, langaugeEditorDisposables);
-				this._onViewportChange(editor);
-			}
+		if (language === this._languageId) {
+			const langaugeEditorDisposables = new DisposableStore();
+			langaugeEditorDisposables.add(editor.onDidScrollChange(() => this._onViewportChange(editor), this));
+			this._languageEditors.set(editor, langaugeEditorDisposables);
+			this._onViewportChange(editor);
 		}
 	}
 
-	private async _onDidChangeModel(editor: ICodeEditor, model: ITextModel | null): Promise<void> {
-		if (model) {
-			this._tryAddEditor(editor, model);
-		} else {
+	private async _onLanguageChange(editor: ICodeEditor, model: ITextModel): Promise<void> {
+		const language = model.getLanguageId();
+		if ((language !== this._languageId) && this._languageEditors.has(editor)) {
 			this._languageEditors.deleteAndDispose(editor);
+			this._onDidRemoveEditor.fire(model);
+		} else if (!this._languageEditors.has(editor)) {
+			this._tryAddEditor(editor, model);
 		}
 	}
 
 	private async _onViewportChange(editor: ICodeEditor): Promise<void> {
 		const ranges = this._nonIntersectingViewPortRanges(editor);
-		const model = editor.getModel();
-		if (!model) {
-			this._languageEditors.deleteAndDispose(editor);
-			return;
-		}
-		this._onDidChangeViewport.fire({ model: model, ranges });
+		this._onDidChangeViewport.fire({ model: editor.getModel()!, ranges });
 	}
 
 	private _nonIntersectingViewPortRanges(editor: ICodeEditor) {

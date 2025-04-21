@@ -174,11 +174,9 @@ export class QuickInputEditorContribution implements IEditorContribution {
 		return editor.getContribution<QuickInputEditorContribution>(QuickInputEditorContribution.ID);
 	}
 
-	readonly widget: QuickInputEditorWidget;
+	readonly widget = new QuickInputEditorWidget(this.editor);
 
-	constructor(private editor: ICodeEditor) {
-		this.widget = new QuickInputEditorWidget(this.editor);
-	}
+	constructor(private editor: ICodeEditor) { }
 
 	dispose(): void {
 		this.widget.dispose();

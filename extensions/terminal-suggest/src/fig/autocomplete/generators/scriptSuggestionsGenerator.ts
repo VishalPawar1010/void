@@ -28,7 +28,7 @@ export async function getScriptSuggestions(
 	}
 
 	try {
-		const { isDangerous, tokenArray, currentWorkingDirectory, environmentVariables } = context;
+		const { isDangerous, tokenArray, currentWorkingDirectory } = context;
 		// A script can either be a string or a function that returns a string.
 		// If the script is a function, run it, and get the output string.
 		const commandToRun =
@@ -46,7 +46,6 @@ export async function getScriptSuggestions(
 				command: commandToRun[0],
 				args: commandToRun.slice(1),
 				cwd: currentWorkingDirectory,
-				env: environmentVariables
 			};
 		} else {
 			executeCommandInput = {

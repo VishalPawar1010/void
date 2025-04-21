@@ -92,7 +92,7 @@ export interface IUntitledFileWorkingCopyInitialContents {
 
 export class UntitledFileWorkingCopy<M extends IUntitledFileWorkingCopyModel> extends Disposable implements IUntitledFileWorkingCopy<M> {
 
-	readonly capabilities: WorkingCopyCapabilities;
+	readonly capabilities = this.isScratchpad ? WorkingCopyCapabilities.Untitled | WorkingCopyCapabilities.Scratchpad : WorkingCopyCapabilities.Untitled;
 
 	private _model: M | undefined = undefined;
 	get model(): M | undefined { return this._model; }
@@ -131,16 +131,13 @@ export class UntitledFileWorkingCopy<M extends IUntitledFileWorkingCopyModel> ex
 	) {
 		super();
 
-		this.capabilities = this.isScratchpad ? WorkingCopyCapabilities.Untitled | WorkingCopyCapabilities.Scratchpad : WorkingCopyCapabilities.Untitled;
-		this.modified = this.hasAssociatedFilePath || Boolean(this.initialContents && this.initialContents.markModified !== false);
-
 		// Make known to working copy service
 		this._register(workingCopyService.registerWorkingCopy(this));
 	}
 
 	//#region Dirty/Modified
 
-	private modified: boolean;
+	private modified = this.hasAssociatedFilePath || Boolean(this.initialContents && this.initialContents.markModified !== false);
 
 	isDirty(): boolean {
 		return this.modified && !this.isScratchpad; // Scratchpad working copies are never dirty

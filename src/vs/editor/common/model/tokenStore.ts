@@ -35,9 +35,7 @@ class ListNode implements IDisposable {
 
 		this._length += node.length;
 		this._updateParentLength(node.length);
-		if (!isLeaf(node)) {
-			node.parent = this;
-		}
+		node.parent = this;
 	}
 
 	private _updateParentLength(delta: number) {
@@ -63,9 +61,7 @@ class ListNode implements IDisposable {
 
 		this._length += node.length;
 		this._updateParentLength(node.length);
-		if (!isLeaf(node)) {
-			node.parent = this;
-		}
+		node.parent = this;
 	}
 
 	unprependChild(): Node {
@@ -95,6 +91,7 @@ type Node = ListNode | LeafNode;
 
 interface LeafNode {
 	readonly length: number;
+	parent?: ListNode;
 	token: number;
 	tokenQuality: TokenQuality;
 	height: 0;
@@ -273,9 +270,7 @@ export class TokenStore implements IDisposable {
 			const currentOffset = node.offset;
 
 			if (currentOffset < updateOffsetStart && currentOffset + node.node.length <= updateOffsetStart) {
-				if (!isLeaf(node.node)) {
-					node.node.parent = undefined;
-				}
+				node.node.parent = undefined;
 				precedingNodes.push(node.node);
 				continue;
 			} else if (isLeaf(node.node) && (currentOffset < updateOffsetStart)) {
@@ -289,12 +284,10 @@ export class TokenStore implements IDisposable {
 			}
 
 			if (currentOffset >= firstUnchangedOffsetAfterUpdate) {
-				if (!isLeaf(node.node)) {
-					node.node.parent = undefined;
-				}
+				node.node.parent = undefined;
 				postcedingNodes.push(node.node);
 				continue;
-			} else if (isLeaf(node.node) && (currentOffset + node.node.length > firstUnchangedOffsetAfterUpdate)) {
+			} else if (isLeaf(node.node) && (currentOffset + node.node.length >= firstUnchangedOffsetAfterUpdate)) {
 				// we have a partial postceeding node
 				postcedingNodes.push({ length: currentOffset + node.node.length - firstUnchangedOffsetAfterUpdate, token: node.node.token, height: 0, tokenQuality: node.node.tokenQuality });
 				continue;
@@ -499,7 +492,7 @@ export class TokenStore implements IDisposable {
 		while (stack.length > 0) {
 			const [node, visited] = stack.pop()!;
 			if (isLeaf(node)) {
-				// leaf node does not need to be disposed
+				node.parent = undefined;
 			} else if (!visited) {
 				stack.push([node, true]);
 				for (let i = node.children.length - 1; i >= 0; i--) {

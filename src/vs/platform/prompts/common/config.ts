@@ -4,8 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ContextKeyExpr } from '../../contextkey/common/contextkey.js';
-import type { IConfigurationService } from '../../configuration/common/configuration.js';
-import { CONFIG_KEY, DEFAULT_SOURCE_FOLDER, LOCATIONS_CONFIG_KEY } from './constants.js';
+import { IConfigurationService } from '../../configuration/common/configuration.js';
 
 /**
  * Configuration helper for the `reusable prompts` feature.
@@ -28,8 +27,21 @@ import { CONFIG_KEY, DEFAULT_SOURCE_FOLDER, LOCATIONS_CONFIG_KEY } from './const
  * - current root folder (if a single folder is open)
  */
 export namespace PromptsConfig {
-	export const KEY = CONFIG_KEY;
-	export const LOCATIONS_KEY = LOCATIONS_CONFIG_KEY;
+	/**
+	 * Configuration key for the `reusable prompts` feature
+	 * (also known as `prompt files`, `prompt instructions`, etc.).
+	 */
+	export const CONFIG_KEY: string = 'chat.promptFiles';
+
+	/**
+	 * Configuration key for the locations of reusable prompt files.
+	 */
+	export const LOCATIONS_CONFIG_KEY: string = 'chat.promptFilesLocations';
+
+	/**
+	 * Default reusable prompt files source folder.
+	 */
+	export const DEFAULT_SOURCE_FOLDER = '.github/prompts';
 
 	/**
 	 * Checks if the feature is enabled.
@@ -103,12 +115,9 @@ export namespace PromptsConfig {
 
 			// copy all the enabled paths to the result list
 			for (const [path, enabled] of Object.entries(value)) {
-				// we already added the default source folder, so skip it
-				if ((enabled === false) || (path === DEFAULT_SOURCE_FOLDER)) {
-					continue;
+				if (enabled && path !== DEFAULT_SOURCE_FOLDER) {
+					paths.push(path);
 				}
-
-				paths.push(path);
 			}
 
 			return paths;

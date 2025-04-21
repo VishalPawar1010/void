@@ -40,10 +40,6 @@ namespace LanguageStatusRequest {
 	export const type: RequestType<string, JSONLanguageStatus, any> = new RequestType('json/languageStatus');
 }
 
-namespace ValidateContentRequest {
-	export const type: RequestType<{ schemaUri: string; content: string }, Diagnostic[], any> = new RequestType('json/validateContent');
-}
-
 export interface DocumentSortingParams {
 	/**
 	 * The uri of the document to sort.
@@ -303,14 +299,6 @@ export function startServer(connection: Connection, runtime: RuntimeEnvironment)
 		return [];
 	});
 
-	connection.onRequest(ValidateContentRequest.type, async ({ schemaUri, content }) => {
-		const docURI = 'vscode://schemas/temp/' + new Date().getTime();
-		const document = TextDocument.create(docURI, 'json', 1, content);
-		updateConfiguration([{ uri: schemaUri, fileMatch: [docURI] }]);
-		return await validateTextDocument(document);
-	});
-
-
 	connection.onRequest(LanguageStatusRequest.type, async uri => {
 		const document = documents.get(uri);
 		if (document) {
@@ -331,7 +319,7 @@ export function startServer(connection: Connection, runtime: RuntimeEnvironment)
 		return [];
 	});
 
-	function updateConfiguration(extraSchemas?: SchemaConfiguration[]) {
+	function updateConfiguration() {
 		const languageSettings = {
 			validate: validateEnabled,
 			allowComments: true,
@@ -362,10 +350,6 @@ export function startServer(connection: Connection, runtime: RuntimeEnvironment)
 				}
 			});
 		}
-		if (extraSchemas) {
-			languageSettings.schemas.push(...extraSchemas);
-		}
-
 		languageService.configure(languageSettings);
 
 		diagnosticsSupport?.requestRefresh();
@@ -545,7 +529,3 @@ export function startServer(connection: Connection, runtime: RuntimeEnvironment)
 function getFullRange(document: TextDocument): Range {
 	return Range.create(Position.create(0, 0), document.positionAt(document.getText().length));
 }
-
-
-
-

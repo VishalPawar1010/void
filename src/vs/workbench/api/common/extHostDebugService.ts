@@ -579,7 +579,7 @@ export abstract class ExtHostDebugServiceBase extends DisposableCls implements I
 			};
 		}
 		const variableResolver = await this._variableResolver.getResolver();
-		return variableResolver.resolveAsync(ws, config);
+		return variableResolver.resolveAnyAsync(ws, config);
 	}
 
 	protected createDebugAdapter(adapter: vscode.DebugAdapterDescriptor, session: ExtHostDebugSession): AbstractDebugAdapter | undefined {

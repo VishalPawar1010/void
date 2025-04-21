@@ -20,7 +20,7 @@ export interface IAuxiliaryWindow extends IBaseWindow {
 
 export class AuxiliaryWindow extends BaseWindow implements IAuxiliaryWindow {
 
-	readonly id: number;
+	readonly id = this.webContents.id;
 	parentId = -1;
 
 	override get win() {
@@ -42,8 +42,6 @@ export class AuxiliaryWindow extends BaseWindow implements IAuxiliaryWindow {
 		@ILifecycleMainService private readonly lifecycleMainService: ILifecycleMainService
 	) {
 		super(configurationService, stateService, environmentMainService, logService);
-
-		this.id = this.webContents.id;
 
 		// Try to claim window
 		this.tryClaimWindow();

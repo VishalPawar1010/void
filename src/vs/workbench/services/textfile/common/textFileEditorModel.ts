@@ -86,8 +86,8 @@ export class TextFileEditorModel extends BaseTextEditorModel implements ITextFil
 
 	readonly capabilities = WorkingCopyCapabilities.None;
 
-	readonly name: string;
-	private resourceHasExtension: boolean;
+	readonly name = basename(this.labelService.getUriLabel(this.resource));
+	private resourceHasExtension: boolean = !!extUri.extname(this.resource);
 
 	private contentEncoding: string | undefined; // encoding as reported from disk
 
@@ -129,9 +129,6 @@ export class TextFileEditorModel extends BaseTextEditorModel implements ITextFil
 		@IProgressService private readonly progressService: IProgressService
 	) {
 		super(modelService, languageService, languageDetectionService, accessibilityService);
-
-		this.name = basename(this.labelService.getUriLabel(this.resource));
-		this.resourceHasExtension = !!extUri.extname(this.resource);
 
 		// Make known to working copy service
 		this._register(this.workingCopyService.registerWorkingCopy(this));

@@ -193,10 +193,6 @@ export function forEachWithNeighbors<T>(arr: T[], f: (before: T | undefined, ele
 	}
 }
 
-export function concatArrays<TArr extends any[]>(...arrays: TArr): TArr[number][number][] {
-	return ([] as any[]).concat(...arrays);
-}
-
 interface IMutableSplice<T> extends ISplice<T> {
 	readonly toInsert: T[];
 	deleteCount: number;
@@ -625,36 +621,6 @@ function getActualStartIndex<T>(array: T[], start: number): number {
 }
 
 /**
- * Utility that helps to pick a property from an object.
- *
- * ## Examples
- *
- * ```typescript
- * interface IObject = {
- *   a: number,
- *   b: string,
- * };
- *
- * const list: IObject[] = [
- *   { a: 1, b: 'foo' },
- *   { a: 2, b: 'bar' },
- * ];
- *
- * assert.deepStrictEqual(
- *   list.map(pick('a')),
- *   [1, 2],
- * );
- * ```
- */
-export const pick = <TObject, TKeyName extends keyof TObject>(
-	key: TKeyName,
-) => {
-	return (obj: TObject): TObject[TKeyName] => {
-		return obj[key];
-	};
-};
-
-/**
  * When comparing two values,
  * a negative number indicates that the first value is less than the second,
  * a positive number indicates that the first value is greater than the second,
@@ -735,17 +701,13 @@ export function compareUndefinedSmallest<T>(comparator: Comparator<T>): Comparat
 }
 
 export class ArrayQueue<T> {
-	private readonly items: readonly T[];
 	private firstIdx = 0;
-	private lastIdx: number;
+	private lastIdx = this.items.length - 1;
 
 	/**
 	 * Constructs a queue that is backed by the given array. Runtime is O(1).
 	*/
-	constructor(items: readonly T[]) {
-		this.items = items;
-		this.lastIdx = this.items.length - 1;
-	}
+	constructor(private readonly items: readonly T[]) { }
 
 	get length(): number {
 		return this.lastIdx - this.firstIdx + 1;

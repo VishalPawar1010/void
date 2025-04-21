@@ -17,17 +17,17 @@ import { shorten } from '../../../base/common/labels.js';
 import { isResolvedEditorModel } from '../../../platform/editor/common/editor.js';
 
 interface IDiffEditorInputLabels {
-	readonly name: string;
+	name: string;
 
-	readonly shortDescription: string | undefined;
-	readonly mediumDescription: string | undefined;
-	readonly longDescription: string | undefined;
+	shortDescription: string | undefined;
+	mediumDescription: string | undefined;
+	longDescription: string | undefined;
 
-	readonly forceDescription: boolean;
+	forceDescription: boolean;
 
-	readonly shortTitle: string;
-	readonly mediumTitle: string;
-	readonly longTitle: string;
+	shortTitle: string;
+	mediumTitle: string;
+	longTitle: string;
 }
 
 /**
@@ -59,7 +59,7 @@ export class DiffEditorInput extends SideBySideEditorInput implements IDiffEdito
 
 	private cachedModel: DiffEditorModel | undefined = undefined;
 
-	private readonly labels: IDiffEditorInputLabels;
+	private readonly labels = this.computeLabels();
 
 	constructor(
 		preferredName: string | undefined,
@@ -70,8 +70,6 @@ export class DiffEditorInput extends SideBySideEditorInput implements IDiffEdito
 		@IEditorService editorService: IEditorService
 	) {
 		super(preferredName, preferredDescription, original, modified, editorService);
-
-		this.labels = this.computeLabels();
 	}
 
 	private computeLabels(): IDiffEditorInputLabels {

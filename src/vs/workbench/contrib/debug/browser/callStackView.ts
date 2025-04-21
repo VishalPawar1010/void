@@ -189,6 +189,7 @@ export class CallStackView extends ViewPane {
 			this.updateActions();
 
 			this.needsRefresh = false;
+			this.dataSource.deemphasizedStackFramesToShow = [];
 			await this.tree.updateChildren();
 			try {
 				const toExpand = new Set<IDebugSession>();
@@ -325,7 +326,7 @@ export class CallStackView extends ViewPane {
 				}
 			}
 			if (element instanceof Array) {
-				element.forEach(sf => this.dataSource.deemphasizedStackFramesToShow.add(sf));
+				this.dataSource.deemphasizedStackFramesToShow.push(...element);
 				this.tree.updateChildren();
 			}
 		}));
@@ -508,7 +509,6 @@ interface IStackFrameTemplateData {
 	label: HighlightedLabel;
 	actionBar: ActionBar;
 	templateDisposable: DisposableStore;
-	elementDisposables: DisposableStore;
 }
 
 function getSessionContextOverlay(session: IDebugSession): [string, any][] {
@@ -726,12 +726,11 @@ class StackFramesRenderer implements ICompressibleTreeRenderer<IStackFrame, Fuzz
 		const lineNumber = dom.append(wrapper, $('span.line-number.monaco-count-badge'));
 
 		const templateDisposable = new DisposableStore();
-		const elementDisposables = new DisposableStore();
-		templateDisposable.add(elementDisposables);
 		const label = templateDisposable.add(new HighlightedLabel(labelDiv));
+
 		const actionBar = templateDisposable.add(new ActionBar(stackFrame));
 
-		return { file, fileName, label, lineNumber, stackFrame, actionBar, templateDisposable, elementDisposables };
+		return { file, fileName, label, lineNumber, stackFrame, actionBar, templateDisposable };
 	}
 
 	renderElement(element: ITreeNode<IStackFrame, FuzzyScore>, index: number, data: IStackFrameTemplateData): void {
@@ -745,7 +744,7 @@ class StackFramesRenderer implements ICompressibleTreeRenderer<IStackFrame, Fuzz
 		if (stackFrame.source.raw.origin) {
 			title += `\n${stackFrame.source.raw.origin}`;
 		}
-		data.elementDisposables.add(this.hoverService.setupManagedHover(getDefaultHoverDelegate('mouse'), data.file, title));
+		data.templateDisposable.add(this.hoverService.setupManagedHover(getDefaultHoverDelegate('mouse'), data.file, title));
 
 		data.label.set(stackFrame.name, createMatches(element.filterData), stackFrame.name);
 		data.fileName.textContent = getSpecificSourceName(stackFrame);
@@ -761,13 +760,13 @@ class StackFramesRenderer implements ICompressibleTreeRenderer<IStackFrame, Fuzz
 
 		data.actionBar.clear();
 		if (hasActions) {
-			const action = data.elementDisposables.add(new Action('debug.callStack.restartFrame', localize('restartFrame', "Restart Frame"), ThemeIcon.asClassName(icons.debugRestartFrame), true, async () => {
+			const action = new Action('debug.callStack.restartFrame', localize('restartFrame', "Restart Frame"), ThemeIcon.asClassName(icons.debugRestartFrame), true, async () => {
 				try {
 					await stackFrame.restart();
 				} catch (e) {
 					this.notificationService.error(e);
 				}
-			}));
+			});
 			data.actionBar.push(action, { icon: true, label: false });
 		}
 	}
@@ -775,12 +774,9 @@ class StackFramesRenderer implements ICompressibleTreeRenderer<IStackFrame, Fuzz
 	renderCompressedElements(node: ITreeNode<ICompressedTreeNode<IStackFrame>, FuzzyScore>, index: number, templateData: IStackFrameTemplateData, height: number | undefined): void {
 		throw new Error('Method not implemented.');
 	}
-	disposeElement(element: ITreeNode<IStackFrame, FuzzyScore>, index: number, templateData: IStackFrameTemplateData, height: number | undefined): void {
-		templateData.elementDisposables.clear();
-	}
 
 	disposeTemplate(templateData: IStackFrameTemplateData): void {
-		templateData.templateDisposable.dispose();
+		templateData.actionBar.dispose();
 	}
 }
 
@@ -933,7 +929,7 @@ function isDebugSession(obj: any): obj is IDebugSession {
 }
 
 class CallStackDataSource implements IAsyncDataSource<IDebugModel, CallStackItem> {
-	deemphasizedStackFramesToShow = new WeakSet<IStackFrame>();
+	deemphasizedStackFramesToShow: IStackFrame[] = [];
 
 	constructor(private debugService: IDebugService) { }
 
@@ -981,7 +977,7 @@ class CallStackDataSource implements IAsyncDataSource<IDebugModel, CallStackItem
 			children.forEach((child, index) => {
 				if (child instanceof StackFrame && child.source && isFrameDeemphasized(child)) {
 					// Check if the user clicked to show the deemphasized source
-					if (!this.deemphasizedStackFramesToShow.has(child)) {
+					if (this.deemphasizedStackFramesToShow.indexOf(child) === -1) {
 						if (result.length) {
 							const last = result[result.length - 1];
 							if (last instanceof Array) {

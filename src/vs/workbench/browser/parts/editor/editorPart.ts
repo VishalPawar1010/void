@@ -170,8 +170,6 @@ export class EditorPart extends Part implements IEditorPart, IEditorGroupsView {
 	) {
 		super(id, { hasTitle: false }, themeService, storageService, layoutService);
 
-		this._partOptions = getEditorPartOptions(this.configurationService, this.themeService);
-
 		this.registerListeners();
 	}
 
@@ -202,7 +200,7 @@ export class EditorPart extends Part implements IEditorPart, IEditorGroupsView {
 
 	private enforcedPartOptions: DeepPartial<IEditorPartOptions>[] = [];
 
-	private _partOptions: IEditorPartOptions;
+	private _partOptions = getEditorPartOptions(this.configurationService, this.themeService);
 	get partOptions(): IEditorPartOptions { return this._partOptions; }
 
 	enforcePartOptions(options: DeepPartial<IEditorPartOptions>): IDisposable {
@@ -995,7 +993,8 @@ export class EditorPart extends Part implements IEditorPart, IEditorGroupsView {
 
 		// Container
 		this.element = parent;
-		this.container = $('.content');
+		this.container = document.createElement('div');
+		this.container.classList.add('content');
 		if (this.windowId !== mainWindow.vscodeWindowId) {
 			this.container.classList.add('auxiliary');
 		}
@@ -1068,7 +1067,8 @@ export class EditorPart extends Part implements IEditorPart, IEditorGroupsView {
 		this._register(this.createEditorDropTarget(container, Object.create(null)));
 
 		// No drop in the editor
-		const overlay = $('.drop-block-overlay');
+		const overlay = document.createElement('div');
+		overlay.classList.add('drop-block-overlay');
 		parent.appendChild(overlay);
 
 		// Hide the block if a mouse down event occurs #99065

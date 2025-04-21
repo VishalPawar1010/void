@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { toAction } from '../../../../base/common/actions.js';
+import { Action } from '../../../../base/common/actions.js';
 import { getErrorMessage, isCancellationError } from '../../../../base/common/errors.js';
 import { Event } from '../../../../base/common/event.js';
 import { Disposable, DisposableStore, MutableDisposable, toDisposable, IDisposable } from '../../../../base/common/lifecycle.js';
@@ -249,11 +249,7 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 					severity: Severity.Info,
 					message: localize('session expired', "Settings sync was turned off because current session is expired, please sign in again to turn on sync."),
 					actions: {
-						primary: [toAction({
-							id: 'turn on sync',
-							label: localize('turn on sync', "Turn on Settings Sync..."),
-							run: () => this.turnOn()
-						})]
+						primary: [new Action('turn on sync', localize('turn on sync', "Turn on Settings Sync..."), undefined, true, () => this.turnOn())]
 					}
 				});
 				break;
@@ -262,11 +258,7 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 					severity: Severity.Info,
 					message: localize('turned off', "Settings sync was turned off from another device, please turn on sync again."),
 					actions: {
-						primary: [toAction({
-							id: 'turn on sync',
-							label: localize('turn on sync', "Turn on Settings Sync..."),
-							run: () => this.turnOn()
-						})]
+						primary: [new Action('turn on sync', localize('turn on sync', "Turn on Settings Sync..."), undefined, true, () => this.turnOn())]
 					}
 				});
 				break;
@@ -300,16 +292,8 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 					message: operationId ? `${message} ${operationId}` : message,
 					actions: {
 						primary: [
-							toAction({
-								id: 'Show Sync Logs',
-								label: localize('show sync logs', "Show Log"),
-								run: () => this.commandService.executeCommand(SHOW_SYNC_LOG_COMMAND_ID)
-							}),
-							toAction({
-								id: 'Report Issue',
-								label: localize('report issue', "Report Issue"),
-								run: () => this.workbenchIssueService.openReporter()
-							})
+							new Action('Show Sync Logs', localize('show sync logs', "Show Log"), undefined, true, () => this.commandService.executeCommand(SHOW_SYNC_LOG_COMMAND_ID)),
+							new Action('Report Issue', localize('report issue', "Report Issue"), undefined, true, () => this.workbenchIssueService.openReporter())
 						]
 					}
 				});
@@ -321,16 +305,8 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 					message: localize('error reset required', "Settings sync is disabled because your data in the cloud is older than that of the client. Please clear your data in the cloud before turning on sync."),
 					actions: {
 						primary: [
-							toAction({
-								id: 'reset',
-								label: localize('reset', "Clear Data in Cloud..."),
-								run: () => this.userDataSyncWorkbenchService.resetSyncedData()
-							}),
-							toAction({
-								id: 'show synced data',
-								label: localize('show synced data action', "Show Synced Data"),
-								run: () => this.userDataSyncWorkbenchService.showSyncActivity()
-							})
+							new Action('reset', localize('reset', "Clear Data in Cloud..."), undefined, true, () => this.userDataSyncWorkbenchService.resetSyncedData()),
+							new Action('show synced data', localize('show synced data action', "Show Synced Data"), undefined, true, () => this.userDataSyncWorkbenchService.showSyncActivity())
 						]
 					}
 				});
@@ -361,11 +337,7 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 						severity: Severity.Info,
 						message: localize('service changed and turned off', "Settings sync was turned off because {0} now uses a separate service. Please turn on sync again.", this.productService.nameLong),
 						actions: {
-							primary: [toAction({
-								id: 'turn on sync',
-								label: localize('turn on sync', "Turn on Settings Sync..."),
-								run: () => this.turnOn()
-							})]
+							primary: [new Action('turn on sync', localize('turn on sync', "Turn on Settings Sync..."), undefined, true, () => this.turnOn())]
 						}
 					});
 				}
@@ -379,11 +351,8 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 			severity: Severity.Error,
 			message: operationId ? `${message} ${operationId}` : message,
 			actions: {
-				primary: [toAction({
-					id: 'open sync file',
-					label: localize('open file', "Open {0} File", getSyncAreaLabel(resource)),
-					run: () => resource === SyncResource.Settings ? this.preferencesService.openUserSettings({ jsonEditor: true }) : this.preferencesService.openGlobalKeybindingSettings(true)
-				})]
+				primary: [new Action('open sync file', localize('open file', "Open {0} File", getSyncAreaLabel(resource)), undefined, true,
+					() => resource === SyncResource.Settings ? this.preferencesService.openUserSettings({ jsonEditor: true }) : this.preferencesService.openGlobalKeybindingSettings(true))]
 			}
 		});
 	}
@@ -439,11 +408,8 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 			severity: Severity.Error,
 			message: localize('errorInvalidConfiguration', "Unable to sync {0} because the content in the file is not valid. Please open the file and correct it.", errorArea.toLowerCase()),
 			actions: {
-				primary: [toAction({
-					id: 'open sync file',
-					label: localize('open file', "Open {0} File", errorArea),
-					run: () => source === SyncResource.Settings ? this.preferencesService.openUserSettings({ jsonEditor: true }) : this.preferencesService.openGlobalKeybindingSettings(true)
-				})]
+				primary: [new Action('open sync file', localize('open file', "Open {0} File", errorArea), undefined, true,
+					() => source === SyncResource.Settings ? this.preferencesService.openUserSettings({ jsonEditor: true }) : this.preferencesService.openGlobalKeybindingSettings(true))]
 			}
 		});
 		this.invalidContentErrorDisposables.set(key, toDisposable(() => {
@@ -528,16 +494,8 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 							message: localize('error reset required while starting sync', "Settings sync cannot be turned on because your data in the cloud is older than that of the client. Please clear your data in the cloud before turning on sync."),
 							actions: {
 								primary: [
-									toAction({
-										id: 'reset',
-										label: localize('reset', "Clear Data in Cloud..."),
-										run: () => this.userDataSyncWorkbenchService.resetSyncedData()
-									}),
-									toAction({
-										id: 'show synced data',
-										label: localize('show synced data action', "Show Synced Data"),
-										run: () => this.userDataSyncWorkbenchService.showSyncActivity()
-									})
+									new Action('reset', localize('reset', "Clear Data in Cloud..."), undefined, true, () => this.userDataSyncWorkbenchService.resetSyncedData()),
+									new Action('show synced data', localize('show synced data action', "Show Synced Data"), undefined, true, () => this.userDataSyncWorkbenchService.showSyncActivity())
 								]
 							}
 						});
@@ -571,7 +529,7 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 
 			const items = this.getConfigureSyncQuickPickItems();
 			quickPick.items = items;
-			quickPick.selectedItems = items.filter(item => this.userDataSyncEnablementService.isResourceEnabled(item.id, true));
+			quickPick.selectedItems = items.filter(item => this.userDataSyncEnablementService.isResourceEnabled(item.id));
 			let accepted: boolean = false;
 			disposables.add(Event.any(quickPick.onDidAccept, quickPick.onDidCustom)(() => {
 				accepted = true;
@@ -617,9 +575,8 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 			label: getSyncAreaLabel(SyncResource.Profiles),
 		}];
 
-		// if the `reusable prompt` feature is enabled and in vscode
-		// insiders, add the `Prompts` resource item to the list
-		if (PromptsConfig.enabled(this.configService) === true) {
+		// if the `reusable prompt` feature is enabled, add appropriate item to the list
+		if (PromptsConfig.enabled(this.configService)) {
 			result.push({
 				id: SyncResource.Prompts,
 				label: getSyncAreaLabel(SyncResource.Prompts)
@@ -804,7 +761,7 @@ export class UserDataSyncWorkbenchContribution extends Disposable implements IWo
 			constructor() {
 				super({
 					id: 'workbench.userData.actions.turningOn',
-					title: localize('turning on sync', "Turning on Settings Sync..."),
+					title: localize('turnin on sync', "Turning on Settings Sync..."),
 					precondition: ContextKeyExpr.false(),
 					menu: [{
 						group: '3_configuration',

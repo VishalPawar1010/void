@@ -40,7 +40,6 @@ export interface IViewModel extends ICursorSimpleModel {
 	setViewport(startLineNumber: number, endLineNumber: number, centeredLineNumber: number): void;
 	visibleLinesStabilized(): void;
 	setHasFocus(hasFocus: boolean): void;
-	setHasWidgetFocus(hasWidgetFocus: boolean): void;
 	onCompositionStart(): void;
 	onCompositionEnd(): void;
 
@@ -133,7 +132,6 @@ export interface IViewLayout {
 	getLineNumberAtVerticalOffset(verticalOffset: number): number;
 	getVerticalOffsetForLineNumber(lineNumber: number, includeViewZones?: boolean): number;
 	getVerticalOffsetAfterLineNumber(lineNumber: number, includeViewZones?: boolean): number;
-	getLineHeightForLineNumber(lineNumber: number): number;
 	getWhitespaceAtVerticalOffset(verticalOffset: number): IViewWhitespaceViewportData | null;
 
 	/**
@@ -155,11 +153,6 @@ export interface IWhitespaceChangeAccessor {
 	insertWhitespace(afterLineNumber: number, ordinal: number, heightInPx: number, minWidth: number): string;
 	changeOneWhitespace(id: string, newAfterLineNumber: number, newHeight: number): void;
 	removeWhitespace(id: string): void;
-}
-
-export interface ILineHeightChangeAccessor {
-	insertOrChangeCustomLineHeight(decorationId: string, startLineNumber: number, endLineNumber: number, lineHeight: number): void;
-	removeCustomLineHeight(decorationId: string): void;
 }
 
 export interface IPartialViewLinesViewportData {

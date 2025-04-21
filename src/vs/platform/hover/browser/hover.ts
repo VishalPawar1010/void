@@ -79,7 +79,7 @@ export class WorkbenchHoverDelegate extends Disposable implements IHoverDelegate
 				? options.content.toString()
 				: options.content.value;
 
-		return this.hoverService.showInstantHover({
+		return this.hoverService.showHover({
 			...options,
 			...overrideOptions,
 			persistence: {

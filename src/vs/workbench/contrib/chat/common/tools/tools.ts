@@ -25,4 +25,6 @@ export class BuiltinToolsContribution extends Disposable implements IWorkbenchCo
 	}
 }
 
-export const InternalFetchWebPageToolId = 'vscode_fetchWebPage_internal';
+export interface IToolInputProcessor {
+	processInput(input: any): any;
+}

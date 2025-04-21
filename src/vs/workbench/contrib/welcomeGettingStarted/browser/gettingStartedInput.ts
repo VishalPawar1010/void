@@ -19,7 +19,6 @@ export interface GettingStartedEditorOptions extends IEditorOptions {
 	showTelemetryNotice?: boolean;
 	showWelcome?: boolean;
 	walkthroughPageTitle?: string;
-	showNewExperience?: boolean;
 }
 
 export class GettingStartedInput extends EditorInput {
@@ -30,8 +29,6 @@ export class GettingStartedInput extends EditorInput {
 	private _selectedStep: string | undefined;
 	private _showTelemetryNotice: boolean;
 	private _showWelcome: boolean;
-	private _showNewExperience: boolean;
-
 	private _walkthroughPageTitle: string | undefined;
 
 	override get typeId(): string {
@@ -75,7 +72,6 @@ export class GettingStartedInput extends EditorInput {
 		this._showTelemetryNotice = !!options.showTelemetryNotice;
 		this._showWelcome = options.showWelcome ?? true;
 		this._walkthroughPageTitle = options.walkthroughPageTitle;
-		this._showNewExperience = options.showNewExperience ?? false;
 	}
 
 	override getName() {
@@ -121,13 +117,5 @@ export class GettingStartedInput extends EditorInput {
 
 	set walkthroughPageTitle(value: string | undefined) {
 		this._walkthroughPageTitle = value;
-	}
-
-	get showNewExperience(): boolean {
-		return this._showNewExperience;
-	}
-
-	set showNewExperience(value: boolean) {
-		this._showNewExperience = value;
 	}
 }

@@ -226,13 +226,6 @@ function findPSCoreDotnetGlobalTool(): IPossiblePowerShellExe {
 	return new PossiblePowerShellExe(dotnetGlobalToolExePath, '.NET Core PowerShell Global Tool');
 }
 
-function findPSCoreScoopInstallation(): IPossiblePowerShellExe {
-	const scoopAppsDir = path.join(os.homedir(), 'scoop', 'apps');
-	const scoopPwsh = path.join(scoopAppsDir, 'pwsh', 'current', 'pwsh.exe');
-
-	return new PossiblePowerShellExe(scoopPwsh, 'PowerShell (Scoop)');
-}
-
 function findWinPS(): IPossiblePowerShellExe | null {
 	const winPSPath = path.join(
 		process.env.windir!,
@@ -288,11 +281,6 @@ async function* enumerateDefaultPowerShellInstallations(): AsyncIterable<IPossib
 
 	// Look for pwsh-preview with the opposite bitness
 	pwshExe = await findPSCoreWindowsInstallation({ useAlternateBitness: true, findPreview: true });
-	if (pwshExe) {
-		yield pwshExe;
-	}
-
-	pwshExe = await findPSCoreScoopInstallation();
 	if (pwshExe) {
 		yield pwshExe;
 	}

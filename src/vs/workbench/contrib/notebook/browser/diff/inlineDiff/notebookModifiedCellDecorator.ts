@@ -5,9 +5,9 @@
 
 import { Disposable, DisposableStore, toDisposable } from '../../../../../../base/common/lifecycle.js';
 import { CellDiffInfo } from '../notebookDiffViewModel.js';
-import { INotebookEditor, NotebookOverviewRulerLane } from '../../notebookBrowser.js';
+import { INotebookEditor } from '../../notebookBrowser.js';
+import { CellKind } from '../../../common/notebookCommon.js';
 import { NotebookCellTextModel } from '../../../common/model/notebookCellTextModel.js';
-import { overviewRulerModifiedForeground } from '../../../../scm/common/quickDiff.js';
 
 export class NotebookModifiedCellDecorator extends Disposable {
 	private readonly decorators = this._register(new DisposableStore());
@@ -23,24 +23,19 @@ export class NotebookModifiedCellDecorator extends Disposable {
 			return;
 		}
 
-		const modifiedCells: NotebookCellTextModel[] = [];
+		const modifiedMarkdownCells: NotebookCellTextModel[] = [];
 		for (const diff of diffInfo) {
 			if (diff.type === 'modified') {
 				const cell = model.cells[diff.modifiedCellIndex];
-				modifiedCells.push(cell);
+				if (cell.cellKind === CellKind.Markup) {
+					modifiedMarkdownCells.push(cell);
+				}
 			}
 		}
 
-		const ids = this.notebookEditor.deltaCellDecorations([], modifiedCells.map(cell => ({
+		const ids = this.notebookEditor.deltaCellDecorations([], modifiedMarkdownCells.map(cell => ({
 			handle: cell.handle,
-			options: {
-				overviewRuler: {
-					color: overviewRulerModifiedForeground,
-					modelRanges: [],
-					includeOutput: true,
-					position: NotebookOverviewRulerLane.Full
-				}
-			}
+			options: { outputClassName: 'nb-insertHighlight' }
 		})));
 
 		this.clear();

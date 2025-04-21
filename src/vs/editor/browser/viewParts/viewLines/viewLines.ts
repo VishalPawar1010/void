@@ -145,7 +145,7 @@ export class ViewLines extends ViewPart implements IViewLines {
 
 		this._linesContent = linesContent;
 		this._textRangeRestingSpot = document.createElement('div');
-		this._visibleLines = new VisibleLinesCollection(this._context, {
+		this._visibleLines = new VisibleLinesCollection({
 			createLine: () => new ViewLine(viewGpuContext, this._viewLineOptions),
 		});
 		this.domNode = this._visibleLines.domNode;
@@ -444,7 +444,7 @@ export class ViewLines extends ViewPart implements IViewLines {
 			}
 
 			const startColumn = lineNumber === range.startLineNumber ? range.startColumn : 1;
-			const continuesInNextLine = lineNumber !== originalEndLineNumber;
+			const continuesInNextLine = lineNumber !== range.endLineNumber;
 			const endColumn = continuesInNextLine ? this._context.viewModel.getLineMaxColumn(lineNumber) : range.endColumn;
 			const visibleRangesForLine = this._visibleLines.getVisibleLine(lineNumber).getVisibleRangesForRange(lineNumber, startColumn, endColumn, domReadingContext);
 

@@ -20,7 +20,7 @@ import { IDialogService, IFileDialogService } from '../../../../platform/dialogs
 import { Event } from '../../../../base/common/event.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { Codicon } from '../../../../base/common/codicons.js';
-import { toAction } from '../../../../base/common/actions.js';
+import { Action } from '../../../../base/common/actions.js';
 import { IUserDataSyncWorkbenchService, CONTEXT_SYNC_STATE, getSyncAreaLabel, CONTEXT_ACCOUNT_STATE, AccountStatus, CONTEXT_ENABLE_ACTIVITY_VIEWS, SYNC_TITLE, SYNC_CONFLICTS_VIEW_ID, CONTEXT_ENABLE_SYNC_CONFLICTS_VIEW, CONTEXT_HAS_CONFLICTS } from '../../../services/userDataSync/common/userDataSync.js';
 import { IUserDataSyncMachinesService, IUserDataSyncMachine, isWebPlatform } from '../../../../platform/userDataSync/common/userDataSyncMachines.js';
 import { IQuickInputService } from '../../../../platform/quickinput/common/quickInput.js';
@@ -380,11 +380,7 @@ abstract class UserDataSyncActivityViewDataProvider<T = Profile> implements ITre
 					message: error.message,
 					actions: {
 						primary: [
-							toAction({
-								id: 'reset',
-								label: localize('reset', "Reset Synced Data"),
-								run: () => this.userDataSyncWorkbenchService.resetSyncedData()
-							}),
+							new Action('reset', localize('reset', "Reset Synced Data"), undefined, true, () => this.userDataSyncWorkbenchService.resetSyncedData()),
 						]
 					}
 				});

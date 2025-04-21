@@ -547,7 +547,6 @@ const newCommands: ApiCommand[] = [
 				initialRange: v.initialRange ? typeConverters.Range.from(v.initialRange) : undefined,
 				initialSelection: types.Selection.isSelection(v.initialSelection) ? typeConverters.Selection.from(v.initialSelection) : undefined,
 				message: v.message,
-				attachments: v.attachments,
 				autoSend: v.autoSend,
 				position: v.position ? typeConverters.Position.from(v.position) : undefined,
 			};
@@ -560,7 +559,6 @@ type InlineChatEditorApiArg = {
 	initialRange?: vscode.Range;
 	initialSelection?: vscode.Selection;
 	message?: string;
-	attachments?: vscode.Uri[];
 	autoSend?: boolean;
 	position?: vscode.Position;
 };
@@ -569,7 +567,6 @@ type InlineChatRunOptions = {
 	initialRange?: IRange;
 	initialSelection?: ISelection;
 	message?: string;
-	attachments?: URI[];
 	autoSend?: boolean;
 	position?: IPosition;
 };

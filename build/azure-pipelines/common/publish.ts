@@ -20,7 +20,7 @@ import { BlobClient, BlobServiceClient, BlockBlobClient, ContainerClient, Contai
 import jws from 'jws';
 import { clearInterval, setInterval } from 'node:timers';
 
-export function e(name: string): string {
+function e(name: string): string {
 	const result = process.env[name];
 
 	if (typeof result !== 'string') {
@@ -583,7 +583,7 @@ const azdoFetchOptions = {
 	}
 };
 
-export async function requestAZDOAPI<T>(path: string): Promise<T> {
+async function requestAZDOAPI<T>(path: string): Promise<T> {
 	const abortController = new AbortController();
 	const timeout = setTimeout(() => abortController.abort(), 2 * 60 * 1000);
 
@@ -600,7 +600,7 @@ export async function requestAZDOAPI<T>(path: string): Promise<T> {
 	}
 }
 
-export interface Artifact {
+interface Artifact {
 	readonly name: string;
 	readonly resource: {
 		readonly downloadUrl: string;
@@ -694,7 +694,7 @@ interface Asset {
 }
 
 // Contains all of the logic for mapping details to our actual product names in CosmosDB
-function getPlatform(product: string, os: string, arch: string, type: string): string {
+function getPlatform(product: string, os: string, arch: string, type: string, isLegacy: boolean): string {
 	switch (os) {
 		case 'win32':
 			switch (product) {
@@ -739,12 +739,12 @@ function getPlatform(product: string, os: string, arch: string, type: string): s
 						case 'client':
 							return `linux-${arch}`;
 						case 'server':
-							return `server-linux-${arch}`;
+							return isLegacy ? `server-linux-legacy-${arch}` : `server-linux-${arch}`;
 						case 'web':
 							if (arch === 'standalone') {
 								return 'web-standalone';
 							}
-							return `server-linux-${arch}-web`;
+							return isLegacy ? `server-linux-legacy-${arch}-web` : `server-linux-${arch}-web`;
 						default:
 							throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
 					}
@@ -896,7 +896,8 @@ async function processArtifact(
 		}
 
 		const { product, os, arch, unprocessedType } = match.groups!;
-		const platform = getPlatform(product, os, arch, unprocessedType);
+		const isLegacy = artifact.name.includes('_legacy');
+		const platform = getPlatform(product, os, arch, unprocessedType, isLegacy);
 		const type = getRealType(unprocessedType);
 		const size = fs.statSync(filePath).size;
 		const stream = fs.createReadStream(filePath);
@@ -955,6 +956,7 @@ async function main() {
 
 	if (e('VSCODE_BUILD_STAGE_WINDOWS') === 'True') { stages.add('Windows'); }
 	if (e('VSCODE_BUILD_STAGE_LINUX') === 'True') { stages.add('Linux'); }
+	if (e('VSCODE_BUILD_STAGE_LINUX_LEGACY_SERVER') === 'True') { stages.add('LinuxLegacyServer'); }
 	if (e('VSCODE_BUILD_STAGE_ALPINE') === 'True') { stages.add('Alpine'); }
 	if (e('VSCODE_BUILD_STAGE_MACOS') === 'True') { stages.add('macOS'); }
 	if (e('VSCODE_BUILD_STAGE_WEB') === 'True') { stages.add('Web'); }

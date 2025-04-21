@@ -243,7 +243,9 @@ interface IExtensionListener<E> {
 
 class LazyRevivedFileSystemEvents implements FileSystemEvents {
 
-	readonly session: number | undefined;
+	constructor(private readonly _events: FileSystemEvents) { }
+
+	readonly session = this._events.session;
 
 	private _created = new Lazy(() => this._events.created.map(URI.revive) as URI[]);
 	get created(): URI[] { return this._created.value; }
@@ -253,10 +255,6 @@ class LazyRevivedFileSystemEvents implements FileSystemEvents {
 
 	private _deleted = new Lazy(() => this._events.deleted.map(URI.revive) as URI[]);
 	get deleted(): URI[] { return this._deleted.value; }
-
-	constructor(private readonly _events: FileSystemEvents) {
-		this.session = this._events.session;
-	}
 }
 
 export class ExtHostFileSystemEventService implements ExtHostFileSystemEventServiceShape {

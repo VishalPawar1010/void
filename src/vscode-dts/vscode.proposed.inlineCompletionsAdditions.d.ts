@@ -44,13 +44,6 @@ declare module 'vscode' {
 		showInlineEditMenu?: boolean;
 
 		action?: Command;
-
-		displayLocation?: InlineCompletionDisplayLocation;
-	}
-
-	export interface InlineCompletionDisplayLocation {
-		range: Range;
-		label: string;
 	}
 
 	export interface InlineCompletionWarning {
@@ -79,27 +72,10 @@ declare module 'vscode' {
 		handleDidShowCompletionItem?(completionItem: InlineCompletionItem, updatedInsertText: string): void;
 
 		/**
-		 * Is called when an inline completion item was accepted partially.
-		 * @param info Additional info for the partial accepted trigger.
-		 */
-		// eslint-disable-next-line local/vscode-dts-provider-naming
-		handleDidPartiallyAcceptCompletionItem?(completionItem: InlineCompletionItem, info: PartialAcceptInfo): void;
-
-		/**
-		 * Is called when an inline completion item is no longer being used.
-		 * Provides a reason of why it is not used anymore.
+		 * @param completionItem The completion item that was rejected.
 		*/
 		// eslint-disable-next-line local/vscode-dts-provider-naming
-		handleEndOfLifetime?(completionItem: InlineCompletionItem, reason: InlineCompletionEndOfLifeReason): void;
-
-		readonly debounceDelayMs?: number;
-
-		onDidChange?: Event<void>;
-
-		// #region Deprecated methods
-
-		/** @deprecated */
-		provideInlineEditsForRange?(document: TextDocument, range: Range, context: InlineCompletionContext, token: CancellationToken): ProviderResult<InlineCompletionItem[] | InlineCompletionList>;
+		handleDidRejectCompletionItem?(completionItem: InlineCompletionItem): void;
 
 		/**
 		 * Is called when an inline completion item was accepted partially.
@@ -110,30 +86,16 @@ declare module 'vscode' {
 		handleDidPartiallyAcceptCompletionItem?(completionItem: InlineCompletionItem, acceptedLength: number): void;
 
 		/**
-		 * @param completionItem The completion item that was rejected.
-		 * @deprecated Use {@link handleEndOfLifetime} instead.
-		*/
+		 * Is called when an inline completion item was accepted partially.
+		 * @param info Additional info for the partial accepted trigger.
+		 */
 		// eslint-disable-next-line local/vscode-dts-provider-naming
-		handleDidRejectCompletionItem?(completionItem: InlineCompletionItem): void;
+		handleDidPartiallyAcceptCompletionItem?(completionItem: InlineCompletionItem, info: PartialAcceptInfo): void;
 
-		// #endregion
+		provideInlineEditsForRange?(document: TextDocument, range: Range, context: InlineCompletionContext, token: CancellationToken): ProviderResult<InlineCompletionItem[] | InlineCompletionList>;
+
+		readonly debounceDelayMs?: number;
 	}
-
-	export enum InlineCompletionEndOfLifeReasonKind {
-		Accepted = 0,
-		Rejected = 1,
-		Ignored = 2,
-	}
-
-	export type InlineCompletionEndOfLifeReason = {
-		kind: InlineCompletionEndOfLifeReasonKind.Accepted; // User did an explicit action to accept
-	} | {
-		kind: InlineCompletionEndOfLifeReasonKind.Rejected; // User did an explicit action to reject
-	} | {
-		kind: InlineCompletionEndOfLifeReasonKind.Ignored;
-		supersededBy?: InlineCompletionItem;
-		userTypingDisagreed: boolean;
-	};
 
 	export interface InlineCompletionContext {
 		readonly userPrompt?: string;
@@ -164,7 +126,7 @@ declare module 'vscode' {
 		commands?: Command[];
 
 		/**
-		 * When set and the user types a suggestion without deviating from it, the inline suggestion is not updated.
+		 * When set and the user types a suggestion without derivating from it, the inline suggestion is not updated.
 		 * Defaults to false (might change).
 		 */
 		enableForwardStability?: boolean;

@@ -28,8 +28,9 @@ export class LinuxUpdateService extends AbstractUpdateService {
 		super(lifecycleMainService, configurationService, environmentMainService, requestService, logService, productService);
 	}
 
-	protected buildUpdateFeedUrl(quality: string): string {
-		return createUpdateURL(`linux-${process.arch}`, quality, this.productService);
+	// Void: buildUpdateFeedUrl -> doBuildUpdateFeedUrl
+	protected doBuildUpdateFeedUrl(quality: string): string {
+		return createUpdateURL(this.productService, quality, process.platform, process.arch);
 	}
 
 	protected doCheckForUpdates(context: any): void {

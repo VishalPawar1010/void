@@ -368,7 +368,7 @@ export interface IDebugLocationReferenced {
 	source: Source;
 }
 
-export interface IDebugSession extends ITreeElement, IDisposable {
+export interface IDebugSession extends ITreeElement {
 
 	readonly configuration: IConfig;
 	readonly unresolvedConfiguration: IConfig | undefined;
@@ -412,8 +412,6 @@ export interface IDebugSession extends ITreeElement, IDisposable {
 	removeReplExpressions(): void;
 	addReplExpression(stackFrame: IStackFrame | undefined, name: string): Promise<void>;
 	appendToRepl(data: INewReplElementData): void;
-	/** Cancel any associated test run set through the DebugSessionOptions */
-	cancelCorrelatedTestRun(): void;
 
 	// session events
 	readonly onDidEndAdapter: Event<AdapterEndEvent | undefined>;

@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import stylisticTs from '@stylistic/eslint-plugin-ts';
 import pluginLocal from 'eslint-plugin-local';
 import pluginJsdoc from 'eslint-plugin-jsdoc';
+// import pluginReact from 'eslint-plugin-react'; // Void
 
 import pluginHeader from 'eslint-plugin-header';
 pluginHeader.rules.header.meta.schema = false;
@@ -24,10 +25,7 @@ const ignores = fs.readFileSync(path.join(__dirname, '.eslint-ignore'), 'utf8')
 export default tseslint.config(
 	// Global ignores
 	{
-		ignores: [
-			...ignores,
-			'!**/.eslint-plugin-local/**/*'
-		],
+		ignores,
 	},
 	// All files (JS and TS)
 	{
@@ -40,10 +38,10 @@ export default tseslint.config(
 		},
 		rules: {
 			'constructor-super': 'warn',
-			'curly': 'warn',
+			'curly': 'off', // <-- Void
 			'eqeqeq': 'warn',
 			'prefer-const': [
-				'warn',
+				'off', // <-- Void
 				{
 					'destructuring': 'all'
 				}
@@ -83,12 +81,11 @@ export default tseslint.config(
 			'local/code-parameter-properties-must-have-explicit-accessibility': 'warn',
 			'local/code-no-nls-in-standalone-editor': 'warn',
 			'local/code-no-potentially-unsafe-disposables': 'warn',
-			'local/code-no-dangerous-type-assertions': 'warn',
+			'local/code-no-dangerous-type-assertions': 'off',
 			'local/code-no-standalone-editor': 'warn',
 			'local/code-no-unexternalized-strings': 'warn',
 			'local/code-must-use-super-dispose': 'warn',
 			'local/code-declare-service-brand': 'warn',
-			'local/code-no-deep-import-of-internal': ['error', { '.*Internal': true, 'searchExtTypesInternal': false }],
 			'local/code-layering': [
 				'warn',
 				{
@@ -114,16 +111,17 @@ export default tseslint.config(
 					]
 				}
 			],
-			'header/header': [
-				2,
-				'block',
-				[
-					'---------------------------------------------------------------------------------------------',
-					' *  Copyright (c) Microsoft Corporation. All rights reserved.',
-					' *  Licensed under the MIT License. See License.txt in the project root for license information.',
-					' *--------------------------------------------------------------------------------------------'
-				]
-			]
+			// Void - this should only apply to workbench/void/
+			// 'header/header': [
+			// 	2,
+			// 	'block',
+			// 	[
+			// 		'/*--------------------------------------------------------------------------------------',
+			// 		'*  Copyright 2025 Glass Devtools, Inc. All rights reserved.',
+			// 		'*  Licensed under the Apache License, Version 2.0. See LICENSE.txt for more information.',
+			// 		'*--------------------------------------------------------------------------------------*/',
+			// 	]
+			// ]
 		},
 	},
 	// TS
@@ -141,8 +139,8 @@ export default tseslint.config(
 			'jsdoc': pluginJsdoc,
 		},
 		rules: {
-			'@stylistic/ts/semi': 'warn',
-			'@stylistic/ts/member-delimiter-style': 'warn',
+			'@stylistic/ts/semi': 'off', // <-- Void
+			'@stylistic/ts/member-delimiter-style': 'off', // <-- Void
 			'local/code-no-unused-expressions': [
 				'warn',
 				{
@@ -150,7 +148,7 @@ export default tseslint.config(
 				}
 			],
 			'jsdoc/no-types': 'warn',
-			'local/code-no-static-self-ref': 'warn'
+			'local/code-no-static-self-ref': 'off' // <-- Void
 		}
 	},
 	// vscode TS
@@ -960,7 +958,7 @@ export default tseslint.config(
 					]
 				},
 				{
-					'target': 'src/vs/editor/editor.worker.start.ts',
+					'target': 'src/vs/editor/editor.worker.ts',
 					'layer': 'worker',
 					'restrictions': [
 						'vs/base/~',

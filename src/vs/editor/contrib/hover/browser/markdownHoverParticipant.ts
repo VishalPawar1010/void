@@ -312,7 +312,7 @@ class MarkdownRenderedHoverParts implements IRenderedHoverParts<MarkdownHover> {
 		markdownHover: MarkdownHover,
 		onFinishedRendering: () => void
 	): IRenderedHoverPart<MarkdownHover> {
-		const renderedMarkdownHover = renderMarkdown(
+		const renderedMarkdownHover = renderMarkdownInContainer(
 			this._editor,
 			markdownHover,
 			this._languageService,
@@ -484,20 +484,18 @@ export function renderMarkdownHovers(
 	markdownHovers.sort(compareBy(hover => hover.ordinal, numberComparator));
 	const renderedHoverParts: IRenderedHoverPart<MarkdownHover>[] = [];
 	for (const markdownHover of markdownHovers) {
-		const renderedHoverPart = renderMarkdown(
+		renderedHoverParts.push(renderMarkdownInContainer(
 			editor,
 			markdownHover,
 			languageService,
 			openerService,
 			context.onContentsChanged,
-		);
-		context.fragment.appendChild(renderedHoverPart.hoverElement);
-		renderedHoverParts.push(renderedHoverPart);
+		));
 	}
 	return new RenderedHoverParts(renderedHoverParts);
 }
 
-function renderMarkdown(
+function renderMarkdownInContainer(
 	editor: ICodeEditor,
 	markdownHover: MarkdownHover,
 	languageService: ILanguageService,

@@ -249,9 +249,9 @@ export abstract class TextSearchHeadingImpl<QueryType extends ITextSearchQuery> 
 		return this.matches().reduce<number>((prev, match) => prev + match.count(), 0);
 	}
 
-	clear(clearAll: boolean = true): void {
+	clear(): void {
 		this.cachedSearchComplete = undefined;
-		this.folderMatches().forEach((folderMatch) => folderMatch.clear(clearAll));
+		this.folderMatches().forEach((folderMatch) => folderMatch.clear(true));
 		this.disposeMatches();
 		this._folderMatches = [];
 		this._otherFilesMatch = null;

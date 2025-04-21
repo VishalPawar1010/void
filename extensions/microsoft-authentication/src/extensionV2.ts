@@ -49,13 +49,14 @@ async function initMicrosoftSovereignCloudAuthProvider(
 		return undefined;
 	}
 
-	const authProvider = await MsalAuthProvider.create(
+	const authProvider = new MsalAuthProvider(
 		context,
 		new MicrosoftSovereignCloudAuthenticationTelemetryReporter(context.extension.packageJSON.aiKey),
 		window.createOutputChannel(l10n.t('Microsoft Sovereign Cloud Authentication'), { log: true }),
 		uriHandler,
 		env
 	);
+	await authProvider.initialize();
 	const disposable = authentication.registerAuthenticationProvider(
 		'microsoft-sovereign-cloud',
 		authProviderName,
@@ -69,12 +70,13 @@ async function initMicrosoftSovereignCloudAuthProvider(
 export async function activate(context: ExtensionContext, mainTelemetryReporter: MicrosoftAuthenticationTelemetryReporter) {
 	const uriHandler = new UriEventHandler();
 	context.subscriptions.push(uriHandler);
-	const authProvider = await MsalAuthProvider.create(
+	const authProvider = new MsalAuthProvider(
 		context,
 		mainTelemetryReporter,
 		Logger,
 		uriHandler
 	);
+	await authProvider.initialize();
 	context.subscriptions.push(authentication.registerAuthenticationProvider(
 		'microsoft',
 		'Microsoft',

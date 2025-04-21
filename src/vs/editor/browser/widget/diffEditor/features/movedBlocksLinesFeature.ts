@@ -95,13 +95,11 @@ export class MovedBlocksLinesFeature extends Disposable {
 		let lastChangedEditor: 'original' | 'modified' = 'modified';
 
 		this._register(autorunHandleChanges({
-			changeTracker: {
-				createChangeSummary: () => undefined,
-				handleChange: (ctx, summary) => {
-					if (ctx.didChange(originalHasFocus)) { lastChangedEditor = 'original'; }
-					if (ctx.didChange(modifiedHasFocus)) { lastChangedEditor = 'modified'; }
-					return true;
-				}
+			createEmptyChangeSummary: () => undefined,
+			handleChange: (ctx, summary) => {
+				if (ctx.didChange(originalHasFocus)) { lastChangedEditor = 'original'; }
+				if (ctx.didChange(modifiedHasFocus)) { lastChangedEditor = 'modified'; }
+				return true;
 			}
 		}, reader => {
 			/** @description MovedBlocksLines.setActiveMovedTextFromCursor */

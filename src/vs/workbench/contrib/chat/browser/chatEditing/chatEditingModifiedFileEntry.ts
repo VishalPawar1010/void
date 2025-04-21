@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { RunOnceScheduler } from '../../../../../base/common/async.js';
 import { Emitter } from '../../../../../base/common/event.js';
 import { Disposable, DisposableMap, MutableDisposable } from '../../../../../base/common/lifecycle.js';
 import { Schemas } from '../../../../../base/common/network.js';
@@ -18,12 +17,11 @@ import { IFileService } from '../../../../../platform/files/common/files.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { observableConfigValue } from '../../../../../platform/observable/common/platformObservableUtils.js';
 import { editorBackground, registerColor, transparent } from '../../../../../platform/theme/common/colorRegistry.js';
-import { IUndoRedoElement, IUndoRedoService } from '../../../../../platform/undoRedo/common/undoRedo.js';
 import { IEditorPane } from '../../../../common/editor.js';
 import { IFilesConfigurationService } from '../../../../services/filesConfiguration/common/filesConfigurationService.js';
 import { ICellEditOperation } from '../../../notebook/common/notebookCommon.js';
 import { IChatAgentResult } from '../../common/chatAgents.js';
-import { ChatEditKind, IModifiedFileEntry, IModifiedFileEntryEditorIntegration, ModifiedFileEntryState } from '../../common/chatEditingService.js';
+import { ChatEditKind, IModifiedFileEntry, IModifiedFileEntryEditorIntegration, WorkingSetEntryState } from '../../common/chatEditingService.js';
 import { IChatResponseModel } from '../../common/chatModel.js';
 import { IChatService } from '../../common/chatService.js';
 
@@ -51,8 +49,8 @@ export abstract class AbstractChatEditingModifiedFileEntry extends Disposable im
 	protected readonly _onDidDelete = this._register(new Emitter<void>());
 	readonly onDidDelete = this._onDidDelete.event;
 
-	protected readonly _stateObs = observableValue<ModifiedFileEntryState>(this, ModifiedFileEntryState.Modified);
-	readonly state: IObservable<ModifiedFileEntryState> = this._stateObs;
+	protected readonly _stateObs = observableValue<WorkingSetEntryState>(this, WorkingSetEntryState.Attached);
+	readonly state: IObservable<WorkingSetEntryState> = this._stateObs;
 
 	protected readonly _isCurrentlyBeingModifiedByObs = observableValue<IChatResponseModel | undefined>(this, undefined);
 	readonly isCurrentlyBeingModifiedBy: IObservable<IChatResponseModel | undefined> = this._isCurrentlyBeingModifiedByObs;
@@ -82,17 +80,14 @@ export abstract class AbstractChatEditingModifiedFileEntry extends Disposable im
 
 	readonly abstract originalURI: URI;
 
-	protected readonly _userEditScheduler = this._register(new RunOnceScheduler(() => this._notifyAction('userModified'), 1000));
-
 	constructor(
 		readonly modifiedURI: URI,
 		protected _telemetryInfo: IModifiedEntryTelemetryInfo,
 		kind: ChatEditKind,
 		@IConfigurationService configService: IConfigurationService,
-		@IFilesConfigurationService protected _fileConfigService: IFilesConfigurationService,
+		@IFilesConfigurationService fileConfigService: IFilesConfigurationService,
 		@IChatService protected readonly _chatService: IChatService,
 		@IFileService protected readonly _fileService: IFileService,
-		@IUndoRedoService private readonly _undoRedoService: IUndoRedoService,
 		@IInstantiationService protected readonly _instantiationService: IInstantiationService,
 	) {
 		super();
@@ -125,7 +120,7 @@ export abstract class AbstractChatEditingModifiedFileEntry extends Disposable im
 		const autoSaveOff = this._store.add(new MutableDisposable());
 		this._store.add(autorun(r => {
 			if (this.isCurrentlyBeingModifiedBy.read(r)) {
-				autoSaveOff.value = _fileConfigService.disableAutoSave(this.modifiedURI);
+				autoSaveOff.value = fileConfigService.disableAutoSave(this.modifiedURI);
 			} else {
 				autoSaveOff.clear();
 			}
@@ -149,7 +144,7 @@ export abstract class AbstractChatEditingModifiedFileEntry extends Disposable im
 
 		const cleanup = autorun(r => {
 			// reset config when settled
-			const resetConfig = this.state.read(r) !== ModifiedFileEntryState.Modified;
+			const resetConfig = this.state.read(r) !== WorkingSetEntryState.Modified;
 			if (resetConfig) {
 				this._store.delete(cleanup);
 				this._reviewModeTempObs.set(undefined, undefined);
@@ -164,13 +159,13 @@ export abstract class AbstractChatEditingModifiedFileEntry extends Disposable im
 	}
 
 	async accept(tx: ITransaction | undefined): Promise<void> {
-		if (this._stateObs.get() !== ModifiedFileEntryState.Modified) {
+		if (this._stateObs.get() !== WorkingSetEntryState.Modified) {
 			// already accepted or rejected
 			return;
 		}
 
 		await this._doAccept(tx);
-		this._stateObs.set(ModifiedFileEntryState.Accepted, tx);
+		this._stateObs.set(WorkingSetEntryState.Accepted, tx);
 		this._autoAcceptCtrl.set(undefined, tx);
 
 		this._notifyAction('accepted');
@@ -179,20 +174,20 @@ export abstract class AbstractChatEditingModifiedFileEntry extends Disposable im
 	protected abstract _doAccept(tx: ITransaction | undefined): Promise<void>;
 
 	async reject(tx: ITransaction | undefined): Promise<void> {
-		if (this._stateObs.get() !== ModifiedFileEntryState.Modified) {
+		if (this._stateObs.get() !== WorkingSetEntryState.Modified) {
 			// already accepted or rejected
 			return;
 		}
 
 		await this._doReject(tx);
-		this._stateObs.set(ModifiedFileEntryState.Rejected, tx);
+		this._stateObs.set(WorkingSetEntryState.Rejected, tx);
 		this._autoAcceptCtrl.set(undefined, tx);
 		this._notifyAction('rejected');
 	}
 
 	protected abstract _doReject(tx: ITransaction | undefined): Promise<void>;
 
-	protected _notifyAction(outcome: 'accepted' | 'rejected' | 'userModified') {
+	private _notifyAction(outcome: 'accepted' | 'rejected') {
 		this._chatService.notifyUserAction({
 			action: { kind: 'chatEditingSessionAction', uri: this.modifiedURI, hasRemainingEdits: false, outcome },
 			agentId: this._telemetryInfo.agentId,
@@ -228,26 +223,15 @@ export abstract class AbstractChatEditingModifiedFileEntry extends Disposable im
 		this._resetEditsState(tx);
 		this._isCurrentlyBeingModifiedByObs.set(responseModel, tx);
 		this._autoAcceptCtrl.get()?.cancel();
-
-		const undoRedoElement = this._createUndoRedoElement(responseModel);
-		if (undoRedoElement) {
-			this._undoRedoService.pushElement(undoRedoElement);
-		}
 	}
-
-	protected abstract _createUndoRedoElement(response: IChatResponseModel): IUndoRedoElement | undefined;
 
 	abstract acceptAgentEdits(uri: URI, edits: (TextEdit | ICellEditOperation)[], isLastEdits: boolean, responseModel: IChatResponseModel): Promise<void>;
 
 	async acceptStreamingEditsEnd(tx: ITransaction) {
 		this._resetEditsState(tx);
 
-		if (await this._areOriginalAndModifiedIdentical()) {
-			// ACCEPT if identical
-			this.accept(tx);
-
-		} else if (!this.reviewMode.get() && !this._autoAcceptCtrl.get()) {
-			// AUTO accept mode
+		// AUTO accept mode
+		if (!this.reviewMode.get() && !this._autoAcceptCtrl.get()) {
 
 			const acceptTimeout = this._autoAcceptTimeout.get() * 1000;
 			const future = Date.now() + acceptTimeout;
@@ -275,8 +259,6 @@ export abstract class AbstractChatEditingModifiedFileEntry extends Disposable im
 		}
 	}
 
-	protected abstract _areOriginalAndModifiedIdentical(): Promise<boolean>;
-
 	protected _resetEditsState(tx: ITransaction): void {
 		this._isCurrentlyBeingModifiedByObs.set(undefined, tx);
 		this._rewriteRatioObs.set(0, tx);
@@ -288,7 +270,7 @@ export abstract class AbstractChatEditingModifiedFileEntry extends Disposable im
 
 	abstract equalsSnapshot(snapshot: ISnapshotEntry | undefined): boolean;
 
-	abstract restoreFromSnapshot(snapshot: ISnapshotEntry, restoreToDisk?: boolean): void;
+	abstract restoreFromSnapshot(snapshot: ISnapshotEntry): void;
 
 	// --- inital content
 
@@ -312,6 +294,6 @@ export interface ISnapshotEntry {
 	readonly original: string;
 	readonly current: string;
 	readonly originalToCurrentEdit: OffsetEdit;
-	readonly state: ModifiedFileEntryState;
+	readonly state: WorkingSetEntryState;
 	telemetryInfo: IModifiedEntryTelemetryInfo;
 }

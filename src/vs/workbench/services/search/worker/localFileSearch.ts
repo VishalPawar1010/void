@@ -5,8 +5,8 @@
 
 import * as glob from '../../../../base/common/glob.js';
 import { UriComponents, URI } from '../../../../base/common/uri.js';
-import { IWebWorkerServerRequestHandler, IWebWorkerServer } from '../../../../base/common/worker/webWorker.js';
-import { ILocalFileSearchWorker, LocalFileSearchWorkerHost, IWorkerFileSearchComplete, IWorkerFileSystemDirectoryHandle, IWorkerFileSystemHandle, IWorkerTextSearchComplete } from '../common/localFileSearchWorkerTypes.js';
+import { IRequestHandler, IWorkerServer } from '../../../../base/common/worker/simpleWorker.js';
+import { ILocalFileSearchSimpleWorker, LocalFileSearchSimpleWorkerHost, IWorkerFileSearchComplete, IWorkerFileSystemDirectoryHandle, IWorkerFileSystemHandle, IWorkerTextSearchComplete } from '../common/localFileSearchWorkerTypes.js';
 import { ICommonQueryProps, IFileMatch, IFileQueryProps, IFolderQuery, IPatternInfo, ITextQueryProps, } from '../common/search.js';
 import * as paths from '../../../../base/common/path.js';
 import { CancellationToken, CancellationTokenSource } from '../../../../base/common/cancellation.js';
@@ -48,18 +48,22 @@ const time = async <T>(name: string, task: () => Promise<T> | T) => {
 	return r;
 };
 
-export function create(workerServer: IWebWorkerServer): IWebWorkerServerRequestHandler {
-	return new LocalFileSearchWorker(workerServer);
+/**
+ * Defines the worker entry point. Must be exported and named `create`.
+ * @skipMangle
+ */
+export function create(workerServer: IWorkerServer): IRequestHandler {
+	return new LocalFileSearchSimpleWorker(workerServer);
 }
 
-export class LocalFileSearchWorker implements ILocalFileSearchWorker, IWebWorkerServerRequestHandler {
+export class LocalFileSearchSimpleWorker implements ILocalFileSearchSimpleWorker, IRequestHandler {
 	_requestHandlerBrand: any;
 
-	private readonly host: LocalFileSearchWorkerHost;
+	private readonly host: LocalFileSearchSimpleWorkerHost;
 	cancellationTokens: Map<number, CancellationTokenSource> = new Map();
 
-	constructor(workerServer: IWebWorkerServer) {
-		this.host = LocalFileSearchWorkerHost.getChannel(workerServer);
+	constructor(workerServer: IWorkerServer) {
+		this.host = LocalFileSearchSimpleWorkerHost.getChannel(workerServer);
 	}
 
 	$cancelQuery(queryId: number): void {

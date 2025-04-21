@@ -340,6 +340,7 @@ export class ReleaseNotesManager {
 						padding-right: 3px;
 						padding-top: 1px;
 						padding-bottom: 1px;
+						margin-left: -5px;
 						margin-top: -3px;
 					}
 					.codesetting:hover {
@@ -362,7 +363,7 @@ export class ReleaseNotesManager {
 						display: inline-block;
 						background-color: var(--vscode-editor-background);
 						font-size: 12px;
-						margin-right: 4px;
+						margin-right: 8px;
 					}
 
 					header { display: flex; align-items: center; padding-top: 1em; }

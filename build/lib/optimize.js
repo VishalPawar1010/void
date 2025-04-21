@@ -70,6 +70,12 @@ function bundleESMTask(opts) {
         }
         return entryPoint;
     });
+    const allMentionedModules = new Set();
+    for (const entryPoint of entryPoints) {
+        allMentionedModules.add(entryPoint.name);
+        entryPoint.include?.forEach(allMentionedModules.add, allMentionedModules);
+        entryPoint.exclude?.forEach(allMentionedModules.add, allMentionedModules);
+    }
     const bundleAsync = async () => {
         const files = [];
         const tasks = [];
@@ -121,6 +127,7 @@ function bundleESMTask(opts) {
             };
             const task = esbuild_1.default.build({
                 bundle: true,
+                external: entryPoint.exclude,
                 packages: 'external', // "external all the things", see https://esbuild.github.io/api/#packages
                 platform: 'neutral', // makes esm
                 format: 'esm',

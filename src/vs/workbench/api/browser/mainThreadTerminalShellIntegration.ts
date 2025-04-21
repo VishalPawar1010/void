@@ -8,7 +8,7 @@ import { Disposable, toDisposable, type IDisposable } from '../../../base/common
 import { URI } from '../../../base/common/uri.js';
 import { TerminalCapability, type ITerminalCommand } from '../../../platform/terminal/common/capabilities/capabilities.js';
 import { ExtHostContext, MainContext, type ExtHostTerminalShellIntegrationShape, type MainThreadTerminalShellIntegrationShape } from '../common/extHost.protocol.js';
-import { ITerminalService, type ITerminalInstance } from '../../contrib/terminal/browser/terminal.js';
+import { ITerminalService } from '../../contrib/terminal/browser/terminal.js';
 import { IWorkbenchEnvironmentService } from '../../services/environment/common/environmentService.js';
 import { extHostNamedCustomer, type IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
 import { TerminalShellExecutionCommandLineConfidence } from '../common/extHostTypes.js';
@@ -33,22 +33,26 @@ export class MainThreadTerminalShellIntegration extends Disposable implements Ma
 			}
 		}));
 
-		// onDidChangeTerminalShellIntegration initial state
+		// onDidchangeTerminalShellIntegration initial state
 		for (const terminal of this._terminalService.instances) {
-			const cmdDetection = terminal.capabilities.get(TerminalCapability.CommandDetection);
-			if (cmdDetection) {
-				this._enableShellIntegration(terminal);
+			if (terminal.capabilities.has(TerminalCapability.CommandDetection)) {
+				this._proxy.$shellIntegrationChange(terminal.instanceId);
+				const cwdDetection = terminal.capabilities.get(TerminalCapability.CwdDetection);
+				if (cwdDetection) {
+					this._proxy.$cwdChange(terminal.instanceId, this._convertCwdToUri(cwdDetection.getCwd()));
+				}
 			}
 		}
 
 		// onDidChangeTerminalShellIntegration via command detection
 		const onDidAddCommandDetection = this._store.add(this._terminalService.createOnInstanceEvent(instance => {
 			return Event.map(
-				Event.filter(instance.capabilities.onDidAddCapabilityType, e => e === TerminalCapability.CommandDetection),
-				() => instance
+				Event.filter(instance.capabilities.onDidAddCapabilityType, e => {
+					return e === TerminalCapability.CommandDetection || e === TerminalCapability.CwdDetection;
+				}), () => instance
 			);
 		})).event;
-		this._store.add(onDidAddCommandDetection(e => this._enableShellIntegration(e)));
+		this._store.add(onDidAddCommandDetection(e => this._proxy.$shellIntegrationChange(e.instanceId)));
 
 		// onDidChangeTerminalShellIntegration via cwd
 		const cwdChangeEvent = this._store.add(this._terminalService.createOnInstanceCapabilityEvent(TerminalCapability.CwdDetection, e => e.onDidChangeCwd));
@@ -113,14 +117,6 @@ export class MainThreadTerminalShellIntegration extends Disposable implements Ma
 
 	private _convertCwdToUri(cwd: string | undefined): URI | undefined {
 		return cwd ? URI.file(cwd) : undefined;
-	}
-
-	private _enableShellIntegration(instance: ITerminalInstance): void {
-		this._proxy.$shellIntegrationChange(instance.instanceId);
-		const cwdDetection = instance.capabilities.get(TerminalCapability.CwdDetection);
-		if (cwdDetection) {
-			this._proxy.$cwdChange(instance.instanceId, this._convertCwdToUri(cwdDetection.getCwd()));
-		}
 	}
 }
 

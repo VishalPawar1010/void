@@ -61,9 +61,7 @@ export interface IDelegate {
 	onDOMEvent?(e: Event, activeElement: HTMLElement): void;
 	onHide?(data?: unknown): void;
 
-	/**
-	 * context views with higher layers are rendered higher in z-index order
-	 */
+	// context views with higher layers are rendered over contet views with lower layers
 	layer?: number; // Default: 0
 }
 

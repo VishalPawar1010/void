@@ -74,8 +74,7 @@
       {
         "command": "notebook.cellOutput.addToChat",
         "title": "%addCellOutputToChat.title%",
-        "category": "Notebook",
-        "enablement": "chatIsEnabled"
+        "category": "Notebook"
       },
       {
         "command": "notebook.cellOutput.openInTextEditor",
@@ -145,7 +144,7 @@
         },
         {
           "command": "notebook.cellOutput.addToChat",
-          "when": "webviewId == 'notebook.output' && (webviewSection == 'text' || webviewSection == 'image')",
+          "when": "webviewId == 'notebook.output' && webviewSection == 'image'",
           "group": "context@2"
         },
         {

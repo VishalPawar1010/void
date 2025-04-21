@@ -3,15 +3,18 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { getAllMethodNames } from '../../../base/common/objects.js';
 import { URI } from '../../../base/common/uri.js';
+import { IWorkerDescriptor } from '../../../base/common/worker/simpleWorker.js';
 import { EditorWorkerClient } from '../../browser/services/editorWorkerService.js';
 import { IModelService } from '../../common/services/model.js';
+import { standaloneEditorWorkerDescriptor } from './standaloneServices.js';
 
 /**
  * Create a new web worker that has model syncing capabilities built in.
  * Specify an AMD module to load that will `create` an object that will be proxied.
  */
-export function createWebWorker<T extends object>(modelService: IModelService, opts: IInternalWebWorkerOptions): MonacoWebWorker<T> {
+export function createWebWorker<T extends object>(modelService: IModelService, opts: IWebWorkerOptions): MonacoWebWorker<T> {
 	return new MonacoWebWorkerImpl<T>(modelService, opts);
 }
 
@@ -34,11 +37,20 @@ export interface MonacoWebWorker<T> {
 	withSyncedResources(resources: URI[]): Promise<T>;
 }
 
-export interface IInternalWebWorkerOptions {
+export interface IWebWorkerOptions {
 	/**
-	 * The worker.
+	 * The AMD moduleId to load.
+	 * It should export a function `create` that should return the exported proxy.
 	 */
-	worker: Worker;
+	moduleId: string;
+	/**
+	 * The data to send over when calling create on the module.
+	 */
+	createData?: any;
+	/**
+	 * A label to be used to identify the web worker for debugging purposes.
+	 */
+	label?: string;
 	/**
 	 * An object that can be used by the web worker to make calls back to the main thread.
 	 */
@@ -52,24 +64,22 @@ export interface IInternalWebWorkerOptions {
 
 class MonacoWebWorkerImpl<T extends object> extends EditorWorkerClient implements MonacoWebWorker<T> {
 
+	private readonly _foreignModuleId: string;
 	private readonly _foreignModuleHost: { [method: string]: Function } | null;
-	private _foreignProxy: Promise<T>;
+	private _foreignModuleCreateData: any | null;
+	private _foreignProxy: Promise<T> | null;
 
-	constructor(modelService: IModelService, opts: IInternalWebWorkerOptions) {
-		super(opts.worker, opts.keepIdleModels || false, modelService);
+	constructor(modelService: IModelService, opts: IWebWorkerOptions) {
+		const workerDescriptor: IWorkerDescriptor = {
+			moduleId: standaloneEditorWorkerDescriptor.moduleId,
+			esmModuleLocation: standaloneEditorWorkerDescriptor.esmModuleLocation,
+			label: opts.label,
+		};
+		super(workerDescriptor, opts.keepIdleModels || false, modelService);
+		this._foreignModuleId = opts.moduleId;
+		this._foreignModuleCreateData = opts.createData || null;
 		this._foreignModuleHost = opts.host || null;
-		this._foreignProxy = this._getProxy().then(proxy => {
-			return new Proxy({}, {
-				get(target, prop, receiver) {
-					if (typeof prop !== 'string') {
-						throw new Error(`Not supported`);
-					}
-					return (...args: any[]) => {
-						return proxy.$fmr(prop, args);
-					};
-				}
-			}) as T;
-		});
+		this._foreignProxy = null;
 	}
 
 	// foreign host request
@@ -85,8 +95,38 @@ class MonacoWebWorkerImpl<T extends object> extends EditorWorkerClient implement
 		}
 	}
 
-	public getProxy(): Promise<T> {
+	private _getForeignProxy(): Promise<T> {
+		if (!this._foreignProxy) {
+			this._foreignProxy = this._getProxy().then((proxy) => {
+				const foreignHostMethods = this._foreignModuleHost ? getAllMethodNames(this._foreignModuleHost) : [];
+				return proxy.$loadForeignModule(this._foreignModuleId, this._foreignModuleCreateData, foreignHostMethods).then((foreignMethods) => {
+					this._foreignModuleCreateData = null;
+
+					const proxyMethodRequest = (method: string, args: any[]): Promise<any> => {
+						return proxy.$fmr(method, args);
+					};
+
+					const createProxyMethod = (method: string, proxyMethodRequest: (method: string, args: any[]) => Promise<any>): () => Promise<any> => {
+						return function () {
+							const args = Array.prototype.slice.call(arguments, 0);
+							return proxyMethodRequest(method, args);
+						};
+					};
+
+					const foreignProxy = {} as any as T;
+					for (const foreignMethod of foreignMethods) {
+						(<any>foreignProxy)[foreignMethod] = createProxyMethod(foreignMethod, proxyMethodRequest);
+					}
+
+					return foreignProxy;
+				});
+			});
+		}
 		return this._foreignProxy;
+	}
+
+	public getProxy(): Promise<T> {
+		return this._getForeignProxy();
 	}
 
 	public withSyncedResources(resources: URI[]): Promise<T> {

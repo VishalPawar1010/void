@@ -53,8 +53,6 @@ import { TerminalContextActionRunner } from './terminalContextMenu.js';
 import type { IHoverAction } from '../../../../base/browser/ui/hover/hover.js';
 import { HoverPosition } from '../../../../base/browser/ui/hover/hoverWidget.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
-import { IStorageService, StorageScope } from '../../../../platform/storage/common/storage.js';
-import { TerminalStorageKeys } from '../common/terminalStorageKeys.js';
 
 const $ = DOM.$;
 
@@ -84,7 +82,6 @@ export class TerminalTabList extends WorkbenchList<ITerminalInstance> {
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IDecorationsService decorationsService: IDecorationsService,
 		@IThemeService private readonly _themeService: IThemeService,
-		@IStorageService private readonly _storageService: IStorageService,
 		@ILifecycleService lifecycleService: ILifecycleService,
 		@IHoverService private readonly _hoverService: IHoverService,
 	) {
@@ -131,8 +128,7 @@ export class TerminalTabList extends WorkbenchList<ITerminalInstance> {
 					this.reveal(i);
 				}
 				this.refresh();
-			}),
-			this._storageService.onDidChangeValue(StorageScope.APPLICATION, TerminalStorageKeys.TabsShowDetailed, this.disposables)(() => this.refresh()),
+			})
 		];
 
 		// Dispose of instance listeners on shutdown to avoid extra work and so tabs don't disappear
@@ -233,8 +229,8 @@ export class TerminalTabList extends WorkbenchList<ITerminalInstance> {
 			return;
 		}
 
-		this._hoverService.showInstantHover({
-			...getInstanceHoverInfo(instance, this._storageService),
+		this._hoverService.showHover({
+			...getInstanceHoverInfo(instance),
 			target: this.getHTMLElement(),
 			trapFocus: true
 		}, true);
@@ -261,7 +257,6 @@ class TerminalTabsRenderer extends Disposable implements IListRenderer<ITerminal
 		@IHoverService private readonly _hoverService: IHoverService,
 		@IKeybindingService private readonly _keybindingService: IKeybindingService,
 		@IListService private readonly _listService: IListService,
-		@IStorageService private readonly _storageService: IStorageService,
 		@IThemeService private readonly _themeService: IThemeService,
 		@IContextViewService private readonly _contextViewService: IContextViewService,
 		@ICommandService private readonly _commandService: ICommandService,
@@ -344,7 +339,7 @@ class TerminalTabsRenderer extends Disposable implements IListRenderer<ITerminal
 			}
 		}
 
-		const hoverInfo = getInstanceHoverInfo(instance, this._storageService);
+		const hoverInfo = getInstanceHoverInfo(instance);
 		template.context.hoverActions = hoverInfo.actions;
 
 		const iconId = this._instantiationService.invokeFunction(getIconId, instance);

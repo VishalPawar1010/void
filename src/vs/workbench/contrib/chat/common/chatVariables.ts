@@ -9,9 +9,10 @@ import { URI } from '../../../../base/common/uri.js';
 import { IRange } from '../../../../editor/common/core/range.js';
 import { Location } from '../../../../editor/common/languages.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { IChatModel, IDiagnosticVariableEntryFilterData } from './chatModel.js';
+import { ChatAgentLocation } from './chatAgents.js';
+import { IChatModel, IChatRequestVariableData, IChatRequestVariableEntry, IDiagnosticVariableEntryFilterData } from './chatModel.js';
+import { IParsedChatRequest } from './chatParserTypes.js';
 import { IChatContentReference, IChatProgressMessage } from './chatService.js';
-import { IToolData } from './languageModelToolsService.js';
 
 export interface IChatVariableData {
 	id: string;
@@ -46,7 +47,12 @@ export const IChatVariablesService = createDecorator<IChatVariablesService>('ICh
 export interface IChatVariablesService {
 	_serviceBrand: undefined;
 	getDynamicVariables(sessionId: string): ReadonlyArray<IDynamicVariable>;
-	getSelectedTools(sessionId: string): ReadonlyArray<IToolData>;
+	attachContext(name: string, value: string | URI | Location | unknown, location: ChatAgentLocation): void;
+
+	/**
+	 * Resolves all variables that occur in `prompt`
+	 */
+	resolveVariables(prompt: IParsedChatRequest, attachedContextVariables: IChatRequestVariableEntry[] | undefined): IChatRequestVariableData;
 }
 
 export interface IDynamicVariable {
@@ -54,6 +60,7 @@ export interface IDynamicVariable {
 	id: string;
 	fullName?: string;
 	icon?: ThemeIcon;
+	prefix?: string;
 	modelDescription?: string;
 	isFile?: boolean;
 	isDirectory?: boolean;

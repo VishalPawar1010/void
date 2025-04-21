@@ -460,9 +460,6 @@ abstract class AbstractTreeView extends Disposable implements ITreeView {
 
 	set title(name: string) {
 		this._title = name;
-		if (this.tree) {
-			this.tree.ariaLabel = this._title;
-		}
 		this._onDidChangeTitle.fire(this._title);
 	}
 
@@ -832,7 +829,6 @@ abstract class AbstractTreeView extends Disposable implements ITreeView {
 		}
 		return command;
 	}
-
 
 	private onContextMenu(treeMenus: TreeMenus, treeEvent: ITreeContextMenuEvent<ITreeItem>, actionRunner: MultipleSelectionActionRunner): void {
 		this.hoverService.hideHover();

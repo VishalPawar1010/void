@@ -50,7 +50,6 @@ export class SimpleSuggestDetailsWidget {
 	constructor(
 		private readonly _getFontInfo: () => ISimpleSuggestWidgetFontInfo,
 		onDidFontInfoChange: Event<void>,
-		private readonly _getAdvancedExplainModeDetails: () => string | undefined,
 		@IInstantiationService instaService: IInstantiationService
 	) {
 		this.domNode = dom.$('.suggest-details');
@@ -140,12 +139,6 @@ export class SimpleSuggestDetailsWidget {
 			md += `replacementIndex: ${item.completion.replacementIndex}\n`;
 			md += `replacementLength: ${item.completion.replacementLength}\n`;
 			md += `index: ${item.idx}\n`;
-			if (this._getAdvancedExplainModeDetails) {
-				const advancedDetails = this._getAdvancedExplainModeDetails();
-				if (advancedDetails) {
-					md += `${advancedDetails}\n`;
-				}
-			}
 			detail = `Provider: ${item.completion.provider}`;
 			documentation = new MarkdownString().appendCodeblock('empty', md);
 		}

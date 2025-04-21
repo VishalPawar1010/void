@@ -87,8 +87,7 @@ export class EnvironmentVariableInfoChangesActive implements IEnvironmentVariabl
 		return {
 			id: TerminalStatus.EnvironmentVariableInfoChangesActive,
 			severity: Severity.Info,
-			tooltip: undefined, // The action is present when details aren't shown
-			detailedTooltip: this._getInfo(scope),
+			tooltip: this._getInfo(scope),
 			hoverActions: this._getActions(scope)
 		};
 	}

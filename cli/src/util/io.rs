@@ -235,7 +235,6 @@ mod tests {
 			.write(true)
 			.read(true)
 			.create(true)
-			.truncate(true)
 			.open(&file_path)
 			.unwrap();
 
@@ -272,7 +271,6 @@ mod tests {
 			.write(true)
 			.read(true)
 			.create(true)
-			.truncate(true)
 			.open(&file_path)
 			.unwrap();
 
@@ -307,7 +305,6 @@ mod tests {
 			.write(true)
 			.read(true)
 			.create(true)
-			.truncate(true)
 			.open(&file_path)
 			.unwrap();
 		let mut rng = rand::thread_rng();

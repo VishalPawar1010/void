@@ -5,7 +5,6 @@
 
 import * as dom from '../../../../../base/browser/dom.js';
 import { Button } from '../../../../../base/browser/ui/button/button.js';
-import { WorkbenchActionExecutedClassification, WorkbenchActionExecutedEvent } from '../../../../../base/common/actions.js';
 import { Codicon } from '../../../../../base/common/codicons.js';
 import { Emitter } from '../../../../../base/common/event.js';
 import { MarkdownString } from '../../../../../base/common/htmlContent.js';
@@ -15,7 +14,6 @@ import { assertType } from '../../../../../base/common/types.js';
 import { MarkdownRenderer } from '../../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
 import { localize } from '../../../../../nls.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
-import { ITelemetryService } from '../../../../../platform/telemetry/common/telemetry.js';
 import { defaultButtonStyles } from '../../../../../platform/theme/browser/defaultStyles.js';
 import { asCssVariable, textLinkForeground } from '../../../../../platform/theme/common/colorRegistry.js';
 import { IChatResponseViewModel } from '../../common/chatViewModel.js';
@@ -44,8 +42,7 @@ export class ChatQuotaExceededPart extends Disposable implements IChatContentPar
 		element: IChatResponseViewModel,
 		renderer: MarkdownRenderer,
 		@IChatWidgetService chatWidgetService: IChatWidgetService,
-		@ICommandService commandService: ICommandService,
-		@ITelemetryService telemetryService: ITelemetryService,
+		@ICommandService commandService: ICommandService
 	) {
 		super();
 
@@ -102,9 +99,7 @@ export class ChatQuotaExceededPart extends Disposable implements IChatContentPar
 		};
 
 		this._register(button1.onDidClick(async () => {
-			const commandId = 'workbench.action.chat.upgradePlan';
-			telemetryService.publicLog2<WorkbenchActionExecutedEvent, WorkbenchActionExecutedClassification>('workbenchActionExecuted', { id: commandId, from: 'chat-response' });
-			await commandService.executeCommand(commandId);
+			await commandService.executeCommand('workbench.action.chat.upgradePlan');
 
 			shouldShowRetryButton = true;
 			addRetryButtonIfNeeded();

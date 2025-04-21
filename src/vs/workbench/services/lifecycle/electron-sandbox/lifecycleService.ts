@@ -154,8 +154,6 @@ export class NativeLifecycleService extends AbstractLifecycleService {
 	}
 
 	protected async handleWillShutdown(reason: ShutdownReason): Promise<void> {
-		this._willShutdown = true;
-
 		const joiners: Promise<void>[] = [];
 		const lastJoiners: (() => Promise<void>)[] = [];
 		const pendingJoiners = new Set<IWillShutdownEventJoiner>();

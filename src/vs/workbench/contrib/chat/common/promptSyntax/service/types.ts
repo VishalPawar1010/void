@@ -15,14 +15,11 @@ import { createDecorator } from '../../../../../../platform/instantiation/common
 export const IPromptsService = createDecorator<IPromptsService>('IPromptsService');
 
 /**
- * Where the prompt is stored.
- */
-export type TPromptsStorage = 'local' | 'user';
-
-/**
- * What the prompt is used for.
- */
-export type TPromptsType = 'instructions' | 'prompt';
+* Supported prompt types.
+*  - `local` means the prompt is a local file.
+*  - `user` means a "roamble" prompt file (similar to snippets).
+*/
+type TPromptsType = 'local' | 'user';
 
 /**
  * Represents a prompt path with its type.
@@ -35,12 +32,7 @@ export interface IPromptPath {
 	readonly uri: URI;
 
 	/**
-	 * Storage of the prompt.
-	 */
-	readonly storage: TPromptsStorage;
-
-	/**
-	 * Type
+	 * Type of the prompt.
 	 */
 	readonly type: TPromptsType;
 }
@@ -62,33 +54,10 @@ export interface IPromptsService extends IDisposable {
 	/**
 	 * List all available prompt files.
 	 */
-	listPromptFiles(type: TPromptsType): Promise<readonly IPromptPath[]>;
+	listPromptFiles(): Promise<readonly IPromptPath[]>;
 
 	/**
 	 * Get a list of prompt source folders based on the provided prompt type.
 	 */
 	getSourceFolders(type: TPromptsType): readonly IPromptPath[];
-
-	/**
-	 * Returns a prompt command if the command name.
-	 * Undefined is returned if the name does not look like a file name of a prompt file.
-	 */
-	asPromptSlashCommand(name: string): IChatPromptSlashCommand | undefined;
-
-	/**
-	 * Gets the prompt file for a slash command.
-	 */
-	resolvePromptSlashCommand(data: IChatPromptSlashCommand): Promise<IPromptPath | undefined>;
-
-	/**
-	 * Returns a prompt command if the command name is valid.
-	 */
-	findPromptSlashCommands(): Promise<IChatPromptSlashCommand[]>;
-
-}
-
-export interface IChatPromptSlashCommand {
-	readonly command: string;
-	readonly detail: string;
-	readonly promptPath?: IPromptPath;
 }

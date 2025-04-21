@@ -130,8 +130,7 @@ export class EditorConfiguration extends Disposable implements IEditorConfigurat
 			tabFocusMode: TabFocus.getTabFocusMode(),
 			inputMode: InputMode.getInputMode(),
 			accessibilitySupport: partialEnv.accessibilitySupport,
-			glyphMarginDecorationLaneCount: this._glyphMarginDecorationLaneCount,
-			editContextSupported: partialEnv.editContextSupported
+			glyphMarginDecorationLaneCount: this._glyphMarginDecorationLaneCount
 		};
 		return EditorOptionsUtil.computeOptions(this._validatedOptions, env);
 	}
@@ -143,7 +142,6 @@ export class EditorConfiguration extends Disposable implements IEditorConfigurat
 			outerHeight: this._containerObserver.getHeight(),
 			emptySelectionClipboard: browser.isWebKit || browser.isFirefox,
 			pixelRatio: PixelRatio.getInstance(getWindowById(this._targetWindowId, true).window).value,
-			editContextSupported: typeof (globalThis as any).EditContext === 'function',
 			accessibilitySupport: (
 				this._accessibilityService.isScreenReaderOptimized()
 					? AccessibilitySupport.Enabled
@@ -251,7 +249,6 @@ export interface IEnvConfiguration {
 	emptySelectionClipboard: boolean;
 	pixelRatio: number;
 	accessibilitySupport: AccessibilitySupport;
-	editContextSupported: boolean;
 }
 
 class ValidatedEditorOptions implements IValidatedEditorOptions {

@@ -198,6 +198,7 @@ class Widget {
 	private readonly _fixedOverflowWidgets: boolean;
 	private _contentWidth: number;
 	private _contentLeft: number;
+	private _lineHeight: number;
 
 	private _primaryAnchor: PositionPair = new PositionPair(null, null);
 	private _secondaryAnchor: PositionPair = new PositionPair(null, null);
@@ -226,6 +227,7 @@ class Widget {
 		this._fixedOverflowWidgets = options.get(EditorOption.fixedOverflowWidgets);
 		this._contentWidth = layoutInfo.contentWidth;
 		this._contentLeft = layoutInfo.contentLeft;
+		this._lineHeight = options.get(EditorOption.lineHeight);
 
 		this._affinity = null;
 		this._preference = [];
@@ -244,6 +246,7 @@ class Widget {
 
 	public onConfigurationChanged(e: viewEvents.ViewConfigurationChangedEvent): void {
 		const options = this._context.configuration.options;
+		this._lineHeight = options.get(EditorOption.lineHeight);
 		if (e.hasChanged(EditorOption.layoutInfo)) {
 			const layoutInfo = options.get(EditorOption.layoutInfo);
 			this._contentLeft = layoutInfo.contentLeft;
@@ -400,12 +403,12 @@ class Widget {
 	 * The content widget should touch if possible the secondary anchor.
 	 */
 	private _getAnchorsCoordinates(ctx: RenderingContext): { primary: AnchorCoordinate | null; secondary: AnchorCoordinate | null } {
-		const primary = getCoordinates(this._primaryAnchor.viewPosition, this._affinity);
+		const primary = getCoordinates(this._primaryAnchor.viewPosition, this._affinity, this._lineHeight);
 		const secondaryViewPosition = (this._secondaryAnchor.viewPosition?.lineNumber === this._primaryAnchor.viewPosition?.lineNumber ? this._secondaryAnchor.viewPosition : null);
-		const secondary = getCoordinates(secondaryViewPosition, this._affinity);
+		const secondary = getCoordinates(secondaryViewPosition, this._affinity, this._lineHeight);
 		return { primary, secondary };
 
-		function getCoordinates(position: Position | null, affinity: PositionAffinity | null): AnchorCoordinate | null {
+		function getCoordinates(position: Position | null, affinity: PositionAffinity | null, lineHeight: number): AnchorCoordinate | null {
 			if (!position) {
 				return null;
 			}
@@ -418,7 +421,6 @@ class Widget {
 			// Left-align widgets that should appear :before content
 			const left = (position.column === 1 && affinity === PositionAffinity.LeftOfInjectedText ? 0 : horizontalPosition.left);
 			const top = ctx.getVerticalOffsetForLineNumber(position.lineNumber) - ctx.scrollTop;
-			const lineHeight = ctx.getLineHeightForLineNumber(position.lineNumber);
 			return new AnchorCoordinate(top, left, lineHeight);
 		}
 	}

@@ -117,15 +117,13 @@ class Arrow {
 	private static readonly _IdGenerator = new IdGenerator('.arrow-decoration-');
 
 	private readonly _ruleName = Arrow._IdGenerator.nextId();
-	private readonly _decorations: IEditorDecorationsCollection;
+	private readonly _decorations = this._editor.createDecorationsCollection();
 	private _color: string | null = null;
 	private _height: number = -1;
 
 	constructor(
 		private readonly _editor: ICodeEditor
-	) {
-		this._decorations = this._editor.createDecorationsCollection();
-	}
+	) { }
 
 	dispose(): void {
 		this.hide();

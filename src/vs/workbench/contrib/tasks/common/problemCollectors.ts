@@ -362,8 +362,6 @@ export class StartStopProblemCollector extends AbstractProblemCollector implemen
 	private currentOwner: string | undefined;
 	private currentResource: string | undefined;
 
-	private _hasStarted: boolean = false;
-
 	constructor(problemMatchers: ProblemMatcher[], markerService: IMarkerService, modelService: IModelService, _strategy: ProblemHandlingStrategy = ProblemHandlingStrategy.Clean, fileService?: IFileService) {
 		super(problemMatchers, markerService, modelService, fileService);
 		const ownerSet: { [key: string]: boolean } = Object.create(null);
@@ -375,10 +373,6 @@ export class StartStopProblemCollector extends AbstractProblemCollector implemen
 	}
 
 	protected async processLineInternal(line: string): Promise<void> {
-		if (!this._hasStarted) {
-			this._hasStarted = true;
-			this._onDidStateChange.fire(IProblemCollectorEvent.create(ProblemCollectorEventKind.BackgroundProcessingBegins));
-		}
 		const markerMatch = this.tryFindMarker(line);
 		if (!markerMatch) {
 			return;

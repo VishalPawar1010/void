@@ -62,56 +62,16 @@ export class Rect {
 		}
 	}
 
-	withMargin(margin: number): Rect;
-	withMargin(marginVertical: number, marginHorizontal: number): Rect;
-	withMargin(marginTop: number, marginRight: number, marginBottom: number, marginLeft: number): Rect;
-	withMargin(marginOrVerticalOrTop: number, rightOrHorizontal?: number, bottom?: number, left?: number): Rect {
-		let marginLeft, marginRight, marginTop, marginBottom;
-
-		// Single margin value
-		if (rightOrHorizontal === undefined && bottom === undefined && left === undefined) {
-			marginLeft = marginRight = marginTop = marginBottom = marginOrVerticalOrTop;
-		}
-		// Vertical and horizontal margins
-		else if (bottom === undefined && left === undefined) {
-			marginLeft = marginRight = rightOrHorizontal!;
-			marginTop = marginBottom = marginOrVerticalOrTop;
-		}
-		// Individual margins for all sides
-		else {
-			marginLeft = left!;
-			marginRight = rightOrHorizontal!;
-			marginTop = marginOrVerticalOrTop;
-			marginBottom = bottom!;
-		}
-
-		return new Rect(
-			this.left - marginLeft,
-			this.top - marginTop,
-			this.right + marginRight,
-			this.bottom + marginBottom,
-		);
+	withMargin(margin: number): Rect {
+		return new Rect(this.left - margin, this.top - margin, this.right + margin, this.bottom + margin);
 	}
 
 	intersectVertical(range: OffsetRange): Rect {
-		const newTop = Math.max(this.top, range.start);
-		const newBottom = Math.min(this.bottom, range.endExclusive);
 		return new Rect(
 			this.left,
-			newTop,
+			Math.max(this.top, range.start),
 			this.right,
-			Math.max(newTop, newBottom),
-		);
-	}
-
-	intersectHorizontal(range: OffsetRange): Rect {
-		const newLeft = Math.max(this.left, range.start);
-		const newRight = Math.min(this.right, range.endExclusive);
-		return new Rect(
-			newLeft,
-			this.top,
-			Math.max(newLeft, newRight),
-			this.bottom,
+			Math.min(this.bottom, range.endExclusive),
 		);
 	}
 
@@ -189,10 +149,6 @@ export class Rect {
 		return new Rect(this.left, top, this.right, this.bottom);
 	}
 
-	withLeft(left: number): Rect {
-		return new Rect(left, this.top, this.right, this.bottom);
-	}
-
 	translateX(delta: number): Rect {
 		return new Rect(this.left + delta, this.top, this.right + delta, this.bottom);
 	}
@@ -231,15 +187,5 @@ export class Rect {
 
 	getRightTop(): Point {
 		return new Point(this.right, this.top);
-	}
-
-	toStyles() {
-		return {
-			position: 'absolute',
-			left: `${this.left}px`,
-			top: `${this.top}px`,
-			width: `${this.width}px`,
-			height: `${this.height}px`,
-		};
 	}
 }

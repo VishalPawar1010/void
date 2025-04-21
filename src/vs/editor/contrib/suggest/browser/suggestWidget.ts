@@ -35,7 +35,6 @@ import { canExpandCompletionItem, SuggestDetailsOverlay, SuggestDetailsWidget } 
 import { ItemRenderer } from './suggestWidgetRenderer.js';
 import { getListStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { status } from '../../../../base/browser/ui/aria/aria.js';
-import { CompletionItemKinds } from '../../../common/languages.js';
 
 /**
  * Suggest widget colors
@@ -231,25 +230,23 @@ export class SuggestWidget implements IDisposable {
 			mouseSupport: false,
 			multipleSelectionSupport: false,
 			accessibilityProvider: {
-				getRole: () => 'listitem',
+				getRole: () => 'option',
 				getWidgetAriaLabel: () => nls.localize('suggest', "Suggest"),
 				getWidgetRole: () => 'listbox',
 				getAriaLabel: (item: CompletionItem) => {
 
 					let label = item.textLabel;
-					const kindLabel = CompletionItemKinds.toLabel(item.completion.kind);
 					if (typeof item.completion.label !== 'string') {
 						const { detail, description } = item.completion.label;
 						if (detail && description) {
-							label = nls.localize('label.full', '{0} {1}, {2}, {3}', label, detail, description, kindLabel);
+							label = nls.localize('label.full', '{0} {1}, {2}', label, detail, description);
 						} else if (detail) {
-							label = nls.localize('label.detail', '{0} {1}, {2}', label, detail, kindLabel);
+							label = nls.localize('label.detail', '{0} {1}', label, detail);
 						} else if (description) {
-							label = nls.localize('label.desc', '{0}, {1}, {2}', label, description, kindLabel);
+							label = nls.localize('label.desc', '{0}, {1}', label, description);
 						}
-					} else {
-						label = nls.localize('label', '{0}, {1}', label, kindLabel);
 					}
+
 					if (!item.isResolved || !this._isDetailsVisible()) {
 						return label;
 					}
@@ -273,7 +270,7 @@ export class SuggestWidget implements IDisposable {
 		const applyStatusBarStyle = () => this.element.domNode.classList.toggle('with-status-bar', this.editor.getOption(EditorOption.suggest).showStatusBar);
 		applyStatusBarStyle();
 
-		this._disposables.add(_themeService.onDidColorThemeChange(t => this._onThemeChange(t)));
+		this._disposables.add(_themeService.onDidColorThemeChange(t => this._onThemeChange(t.theme)));
 		this._onThemeChange(_themeService.getColorTheme());
 
 		this._disposables.add(this._list.onMouseDown(e => this._onListMouseDownOrTap(e)));
@@ -1044,4 +1041,3 @@ export class SuggestContentWidget implements IContentWidget {
 		this._position = position;
 	}
 }
-

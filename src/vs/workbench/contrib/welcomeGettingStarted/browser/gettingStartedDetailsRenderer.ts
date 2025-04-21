@@ -201,7 +201,7 @@ export class GettingStartedDetailsRenderer {
 		</html>`;
 	}
 
-	async renderVideo(path: URI, poster?: URI, description?: string): Promise<string> {
+	async renderVideo(path: URI, poster?: URI): Promise<string> {
 		const nonce = generateUuid();
 
 		return `<!DOCTYPE html>
@@ -218,7 +218,7 @@ export class GettingStartedDetailsRenderer {
 				</style>
 			</head>
 			<body>
-				<video controls autoplay ${poster ? `poster="${poster.toString(true)}"` : ''} muted ${description ? `aria-label="${description}"` : ''}>
+				<video controls autoplay ${poster ? `poster="${poster?.toString(true)}"` : ''} muted>
 					<source src="${path.toString(true)}" type="video/mp4">
 				</video>
 			</body>

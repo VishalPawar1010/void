@@ -10,7 +10,7 @@ import { Range } from '../../../../common/core/range.js';
 import { SingleTextEdit, TextEdit } from '../../../../common/core/textEdit.js';
 import { LineDecoration } from '../../../../common/viewLayout/lineDecorations.js';
 import { InlineDecoration } from '../../../../common/viewModel.js';
-import { ColumnRange } from '../../../../common/core/columnRange.js';
+import { ColumnRange } from '../utils.js';
 
 export class GhostText {
 	constructor(
@@ -68,11 +68,7 @@ export interface IGhostTextLine {
 	lineDecorations: LineDecoration[];
 }
 
-
 export class GhostTextPart {
-
-	readonly lines: IGhostTextLine[];
-
 	constructor(
 		readonly column: number,
 		readonly text: string,
@@ -82,11 +78,12 @@ export class GhostTextPart {
 		readonly preview: boolean,
 		private _inlineDecorations: InlineDecoration[] = [],
 	) {
-		this.lines = splitLines(this.text).map((line, i) => ({
-			line,
-			lineDecorations: LineDecoration.filter(this._inlineDecorations, i + 1, 1, line.length + 1)
-		}));
 	}
+
+	readonly lines: IGhostTextLine[] = splitLines(this.text).map((line, i) => ({
+		line,
+		lineDecorations: LineDecoration.filter(this._inlineDecorations, i + 1, 1, line.length + 1)
+	}));
 
 	equals(other: GhostTextPart): boolean {
 		return this.column === other.column &&
@@ -99,24 +96,22 @@ export class GhostTextPart {
 }
 
 export class GhostTextReplacement {
-	public readonly parts: ReadonlyArray<GhostTextPart>;
-	readonly newLines: string[];
+	public readonly parts: ReadonlyArray<GhostTextPart> = [
+		new GhostTextPart(
+			this.columnRange.endColumnExclusive,
+			this.text,
+			false
+		),
+	];
 
 	constructor(
 		readonly lineNumber: number,
 		readonly columnRange: ColumnRange,
 		readonly text: string,
 		public readonly additionalReservedLineCount: number = 0,
-	) {
-		this.parts = [
-			new GhostTextPart(
-				this.columnRange.endColumnExclusive,
-				this.text,
-				false
-			),
-		];
-		this.newLines = splitLines(this.text);
-	}
+	) { }
+
+	readonly newLines = splitLines(this.text);
 
 	renderForScreenReader(_lineText: string): string {
 		return this.newLines.join('\n');

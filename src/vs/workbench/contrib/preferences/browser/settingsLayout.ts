@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { isWeb, isWindows } from '../../../../base/common/platform.js';
 import { localize } from '../../../../nls.js';
 import { ExtensionToggleData } from '../common/preferences.js';
 
@@ -13,7 +12,6 @@ export interface ITOCEntry<T> {
 	order?: number;
 	children?: ITOCEntry<T>[];
 	settings?: Array<T>;
-	hide?: boolean;
 }
 
 const defaultCommonlyUsedSettings: string[] = [
@@ -236,13 +234,12 @@ export const tocData: ITOCEntry<string> = {
 				{
 					id: 'features/chat',
 					label: localize('chat', 'Chat'),
-					settings: ['chat.*', 'inlineChat.*', 'mcp']
+					settings: ['chat.*', 'inlineChat.*']
 				},
 				{
 					id: 'features/issueReporter',
 					label: localize('issueReporter', 'Issue Reporter'),
-					settings: ['issueReporter.*'],
-					hide: !isWeb
+					settings: ['issueReporter.*']
 				}
 			]
 		},
@@ -283,8 +280,7 @@ export const tocData: ITOCEntry<string> = {
 				{
 					id: 'application/other',
 					label: localize('other', "Other"),
-					settings: ['application.*'],
-					hide: isWindows
+					settings: ['application.*']
 				}
 			]
 		},

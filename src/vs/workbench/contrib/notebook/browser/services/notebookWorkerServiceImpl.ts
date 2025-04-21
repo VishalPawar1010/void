@@ -5,17 +5,17 @@
 
 import { Disposable, DisposableStore, dispose, IDisposable, toDisposable } from '../../../../../base/common/lifecycle.js';
 import { URI } from '../../../../../base/common/uri.js';
-import { IWebWorkerClient, Proxied } from '../../../../../base/common/worker/webWorker.js';
-import { createWebWorker } from '../../../../../base/browser/webWorkerFactory.js';
+import { IWorkerClient, Proxied } from '../../../../../base/common/worker/simpleWorker.js';
+import { createWebWorker } from '../../../../../base/browser/defaultWorkerFactory.js';
 import { NotebookCellTextModel } from '../../common/model/notebookCellTextModel.js';
 import { CellUri, IMainCellDto, INotebookDiffResult, NotebookCellsChangeType, NotebookRawContentEventDto } from '../../common/notebookCommon.js';
 import { INotebookService } from '../../common/notebookService.js';
-import { NotebookWorker } from '../../common/services/notebookWebWorker.js';
+import { NotebookEditorSimpleWorker } from '../../common/services/notebookSimpleWorker.js';
 import { INotebookEditorWorkerService } from '../../common/services/notebookWorkerService.js';
 import { IModelService } from '../../../../../editor/common/services/model.js';
 import { ITextModel } from '../../../../../editor/common/model.js';
 import { TextModel } from '../../../../../editor/common/model/textModel.js';
-import { FileAccess, Schemas } from '../../../../../base/common/network.js';
+import { Schemas } from '../../../../../base/common/network.js';
 import { isEqual } from '../../../../../base/common/resources.js';
 
 export class NotebookEditorWorkerServiceImpl extends Disposable implements INotebookEditorWorkerService {
@@ -65,7 +65,6 @@ class WorkerManager extends Disposable {
 		// this._lastWorkerUsedTime = (new Date()).getTime();
 		if (!this._editorWorkerClient) {
 			this._editorWorkerClient = new NotebookWorkerClient(this._notebookService, this._modelService);
-			this._register(this._editorWorkerClient);
 		}
 		return Promise.resolve(this._editorWorkerClient);
 	}
@@ -76,7 +75,7 @@ class NotebookEditorModelManager extends Disposable {
 	private _syncedModelsLastUsedTime: { [modelUrl: string]: number } = Object.create(null);
 
 	constructor(
-		private readonly _proxy: Proxied<NotebookWorker>,
+		private readonly _proxy: Proxied<NotebookEditorSimpleWorker>,
 		private readonly _notebookService: INotebookService,
 		private readonly _modelService: IModelService,
 	) {
@@ -236,7 +235,7 @@ class NotebookEditorModelManager extends Disposable {
 }
 
 class NotebookWorkerClient extends Disposable {
-	private _worker: IWebWorkerClient<NotebookWorker> | null;
+	private _worker: IWorkerClient<NotebookEditorSimpleWorker> | null;
 	private _modelManager: NotebookEditorModelManager | null;
 
 
@@ -257,27 +256,29 @@ class NotebookWorkerClient extends Disposable {
 		return proxy.$canPromptRecommendation(modelUri.toString());
 	}
 
-	private _getOrCreateModelManager(proxy: Proxied<NotebookWorker>): NotebookEditorModelManager {
+	private _getOrCreateModelManager(proxy: Proxied<NotebookEditorSimpleWorker>): NotebookEditorModelManager {
 		if (!this._modelManager) {
 			this._modelManager = this._register(new NotebookEditorModelManager(proxy, this._notebookService, this._modelService));
 		}
 		return this._modelManager;
 	}
 
-	protected _ensureSyncedResources(resources: URI[]): Proxied<NotebookWorker> {
+	protected _ensureSyncedResources(resources: URI[]): Proxied<NotebookEditorSimpleWorker> {
 		const proxy = this._getOrCreateWorker().proxy;
 		this._getOrCreateModelManager(proxy).ensureSyncedResources(resources);
 		return proxy;
 	}
 
-	private _getOrCreateWorker(): IWebWorkerClient<NotebookWorker> {
+	private _getOrCreateWorker(): IWorkerClient<NotebookEditorSimpleWorker> {
 		if (!this._worker) {
 			try {
-				this._worker = this._register(createWebWorker<NotebookWorker>(
-					FileAccess.asBrowserUri('vs/workbench/contrib/notebook/common/services/notebookWebWorkerMain.js'),
+				this._worker = this._register(createWebWorker<NotebookEditorSimpleWorker>(
+					'vs/workbench/contrib/notebook/common/services/notebookSimpleWorker',
 					'NotebookEditorWorker'
 				));
 			} catch (err) {
+				// logOnceWebWorkerWarning(err);
+				// this._worker = new SynchronousWorkerClient(new EditorSimpleWorker(new EditorWorkerHost(this), null));
 				throw (err);
 			}
 		}

@@ -562,7 +562,6 @@ export function toExtension(extensionDescription: IExtensionDescription): IExten
 		validations: [],
 		isValid: true,
 		preRelease: extensionDescription.preRelease,
-		publisherDisplayName: extensionDescription.publisherDisplayName,
 	};
 }
 

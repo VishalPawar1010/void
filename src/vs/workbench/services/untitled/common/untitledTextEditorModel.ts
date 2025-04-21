@@ -144,8 +144,6 @@ export class UntitledTextEditorModel extends BaseTextEditorModel implements IUnt
 	) {
 		super(modelService, languageService, languageDetectionService, accessibilityService);
 
-		this.dirty = this.hasAssociatedFilePath || !!this.initialValue;
-
 		// Make known to working copy service
 		this._register(this.workingCopyService.registerWorkingCopy(this));
 
@@ -239,7 +237,7 @@ export class UntitledTextEditorModel extends BaseTextEditorModel implements IUnt
 
 	//#region Dirty
 
-	private dirty: boolean;
+	private dirty = this.hasAssociatedFilePath || !!this.initialValue;
 
 	isDirty(): boolean {
 		return this.dirty;

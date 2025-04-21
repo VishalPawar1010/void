@@ -7,8 +7,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.e = e;
-exports.requestAZDOAPI = requestAZDOAPI;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const stream_1 = require("stream");
@@ -384,7 +382,7 @@ async function unzip(packagePath, outputPath) {
     });
 }
 // Contains all of the logic for mapping details to our actual product names in CosmosDB
-function getPlatform(product, os, arch, type) {
+function getPlatform(product, os, arch, type, isLegacy) {
     switch (os) {
         case 'win32':
             switch (product) {
@@ -429,12 +427,12 @@ function getPlatform(product, os, arch, type) {
                         case 'client':
                             return `linux-${arch}`;
                         case 'server':
-                            return `server-linux-${arch}`;
+                            return isLegacy ? `server-linux-legacy-${arch}` : `server-linux-${arch}`;
                         case 'web':
                             if (arch === 'standalone') {
                                 return 'web-standalone';
                             }
-                            return `server-linux-${arch}-web`;
+                            return isLegacy ? `server-linux-legacy-${arch}-web` : `server-linux-${arch}-web`;
                         default:
                             throw new Error(`Unrecognized: ${product} ${os} ${arch} ${type}`);
                     }
@@ -558,7 +556,8 @@ async function processArtifact(artifact, filePath) {
             await releaseService.createRelease(version, filePath, friendlyFileName);
         }
         const { product, os, arch, unprocessedType } = match.groups;
-        const platform = getPlatform(product, os, arch, unprocessedType);
+        const isLegacy = artifact.name.includes('_legacy');
+        const platform = getPlatform(product, os, arch, unprocessedType, isLegacy);
         const type = getRealType(unprocessedType);
         const size = fs_1.default.statSync(filePath).size;
         const stream = fs_1.default.createReadStream(filePath);
@@ -610,6 +609,9 @@ async function main() {
     }
     if (e('VSCODE_BUILD_STAGE_LINUX') === 'True') {
         stages.add('Linux');
+    }
+    if (e('VSCODE_BUILD_STAGE_LINUX_LEGACY_SERVER') === 'True') {
+        stages.add('LinuxLegacyServer');
     }
     if (e('VSCODE_BUILD_STAGE_ALPINE') === 'True') {
         stages.add('Alpine');

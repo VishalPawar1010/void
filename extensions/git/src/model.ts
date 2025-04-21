@@ -640,8 +640,7 @@ export class Model implements IRepositoryResolver, IBranchProtectionProviderRegi
 			this.open(repository);
 			this._closedRepositoriesManager.deleteRepository(repository.root);
 
-			this.logger.info(`[Model][openRepository] Opened repository (path): ${repository.root}`);
-			this.logger.info(`[Model][openRepository] Opened repository (real path): ${repository.rootRealPath ?? repository.root}`);
+			this.logger.info(`[Model][openRepository] Opened repository: ${repository.root}`);
 
 			// Do not await this, we want SCM
 			// to know about the repo asap

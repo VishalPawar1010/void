@@ -31,12 +31,12 @@
 	opacity: .75;
 }
 
-.verified-publisher {
+.extension-verified-publisher {
 	display: flex;
 	align-items: center;
 }
 
-.verified-publisher > .extension-verified-publisher-domain {
+.extension-verified-publisher > .extension-verified-publisher-domain {
 	padding-left: 2px;
 	color: var(--vscode-extensionIcon-verifiedForeground);
 	text-decoration: var(--text-link-decoration);

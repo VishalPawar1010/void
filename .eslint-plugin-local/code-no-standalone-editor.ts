@@ -38,7 +38,7 @@ export = new class NoNlsInStandaloneEditorRule implements eslint.Rule.RuleModule
 				|| /vs(\/|\\)editor(\/|\\)common(\/|\\)standalone(\/|\\)/.test(path)
 				|| /vs(\/|\\)editor(\/|\\)editor.api/.test(path)
 				|| /vs(\/|\\)editor(\/|\\)editor.main/.test(path)
-				|| /vs(\/|\\)editor(\/|\\)editor.worker.start/.test(path)
+				|| /vs(\/|\\)editor(\/|\\)editor.worker/.test(path)
 			) {
 				context.report({
 					loc: node.loc,

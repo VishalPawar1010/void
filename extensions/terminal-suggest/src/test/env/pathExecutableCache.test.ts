@@ -22,13 +22,4 @@ suite('PathExecutableCache', () => {
 		const result2 = await cache.getExecutablesInPath(env);
 		strictEqual(result, result2);
 	});
-
-	test('refresh clears the cache', async () => {
-		const cache = new PathExecutableCache();
-		const env = { PATH: process.env.PATH };
-		const result = await cache.getExecutablesInPath(env);
-		cache.refresh();
-		const result2 = await cache.getExecutablesInPath(env);
-		strictEqual(result !== result2, true);
-	});
 });

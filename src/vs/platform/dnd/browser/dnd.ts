@@ -33,7 +33,6 @@ export const CodeDataTransfers = {
 	FILES: 'CodeFiles',
 	SYMBOLS: 'application/vnd.code.symbols',
 	MARKERS: 'application/vnd.code.diagnostics',
-	NOTEBOOK_CELL_OUTPUT: 'notebook-cell-output',
 };
 
 export interface IDraggedResourceEditorInput extends IBaseTextResourceEditorInput {
@@ -417,10 +416,6 @@ export interface DocumentSymbolTransferData {
 	kind: number;
 }
 
-export interface NotebookCellOutputTransferData {
-	outputId: string;
-}
-
 function setDataAsJSON(e: DragEvent, kind: string, data: unknown) {
 	e.dataTransfer?.setData(kind, JSON.stringify(data));
 }
@@ -454,10 +449,6 @@ export function extractMarkerDropData(e: DragEvent): MarkerTransferData[] | unde
 
 export function fillInMarkersDragData(markerData: MarkerTransferData[], e: DragEvent): void {
 	setDataAsJSON(e, CodeDataTransfers.MARKERS, markerData);
-}
-
-export function extractNotebookCellOutputDropData(e: DragEvent): NotebookCellOutputTransferData | undefined {
-	return getDataAsJSON(e, CodeDataTransfers.NOTEBOOK_CELL_OUTPUT, undefined);
 }
 
 /**

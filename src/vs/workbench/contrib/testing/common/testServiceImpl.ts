@@ -72,7 +72,7 @@ export class TestService extends Disposable implements ITestService {
 	/**
 	 * @inheritdoc
 	 */
-	public readonly collection: MainThreadTestCollection;
+	public readonly collection = new MainThreadTestCollection(this.uriIdentityService, this.expandTest.bind(this));
 
 	/**
 	 * @inheritdoc
@@ -82,13 +82,17 @@ export class TestService extends Disposable implements ITestService {
 	/**
 	 * @inheritdoc
 	 */
-	public readonly showInlineOutput: MutableObservableValue<boolean>;
+	public readonly showInlineOutput = this._register(MutableObservableValue.stored(new StoredValue<boolean>({
+		key: 'inlineTestOutputVisible',
+		scope: StorageScope.WORKSPACE,
+		target: StorageTarget.USER
+	}, this.storage), true));
 
 	constructor(
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IInstantiationService instantiationService: IInstantiationService,
-		@IUriIdentityService uriIdentityService: IUriIdentityService,
-		@IStorageService storage: IStorageService,
+		@IUriIdentityService private readonly uriIdentityService: IUriIdentityService,
+		@IStorageService private readonly storage: IStorageService,
 		@IEditorService private readonly editorService: IEditorService,
 		@ITestProfileService private readonly testProfiles: ITestProfileService,
 		@INotificationService private readonly notificationService: INotificationService,
@@ -97,13 +101,6 @@ export class TestService extends Disposable implements ITestService {
 		@IWorkspaceTrustRequestService private readonly workspaceTrustRequestService: IWorkspaceTrustRequestService,
 	) {
 		super();
-		this.collection = new MainThreadTestCollection(uriIdentityService, this.expandTest.bind(this));
-		this.showInlineOutput = this._register(MutableObservableValue.stored(new StoredValue<boolean>({
-			key: 'inlineTestOutputVisible',
-			scope: StorageScope.WORKSPACE,
-			target: StorageTarget.USER
-		}, storage), true));
-
 		this.excluded = instantiationService.createInstance(TestExclusions);
 		this.isRefreshingTests = TestingContextKeys.isRefreshingTests.bindTo(contextKeyService);
 		this.activeEditorHasTests = TestingContextKeys.activeEditorHasTests.bindTo(contextKeyService);

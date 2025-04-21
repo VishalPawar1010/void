@@ -30,7 +30,6 @@ export interface Ref {
 	readonly type: RefType;
 	readonly name?: string;
 	readonly commit?: string;
-	readonly commitDetails?: Commit;
 	readonly remote?: string;
 }
 

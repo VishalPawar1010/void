@@ -18,8 +18,6 @@ export class ChatTaskContentPart extends Disposable implements IChatContentPart 
 	public readonly domNode: HTMLElement;
 	public readonly onDidChangeHeight: Event<void>;
 
-	private isSettled: boolean;
-
 	constructor(
 		private readonly task: IChatTask,
 		contentReferencesListPool: CollapsibleListPool,
@@ -30,7 +28,6 @@ export class ChatTaskContentPart extends Disposable implements IChatContentPart 
 		super();
 
 		if (task.progress.length) {
-			this.isSettled = true;
 			const refsPart = this._register(instantiationService.createInstance(ChatCollapsibleListContentPart, task.progress, task.content.value, context, contentReferencesListPool));
 			this.domNode = dom.$('.chat-progress-task');
 			this.domNode.appendChild(refsPart.domNode);
@@ -38,7 +35,6 @@ export class ChatTaskContentPart extends Disposable implements IChatContentPart 
 		} else {
 			// #217645
 			const isSettled = task.isSettled?.() ?? true;
-			this.isSettled = isSettled;
 			const showSpinner = !isSettled && !context.element.isComplete;
 			const progressPart = this._register(instantiationService.createInstance(ChatProgressContentPart, task, renderer, context, showSpinner, true, undefined));
 			this.domNode = progressPart.domNode;
@@ -49,7 +45,7 @@ export class ChatTaskContentPart extends Disposable implements IChatContentPart 
 	hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
 		return other.kind === 'progressTask'
 			&& other.progress.length === this.task.progress.length
-			&& other.isSettled() === this.isSettled;
+			&& other.isSettled() === this.task.isSettled();
 	}
 
 	addDisposable(disposable: IDisposable): void {

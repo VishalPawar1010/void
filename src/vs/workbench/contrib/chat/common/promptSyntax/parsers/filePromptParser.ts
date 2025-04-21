@@ -6,9 +6,8 @@
 import { BasePromptParser } from './basePromptParser.js';
 import { URI } from '../../../../../../base/common/uri.js';
 import { ILogService } from '../../../../../../platform/log/common/log.js';
-import { IWorkspaceContextService } from '../../../../../../platform/workspace/common/workspace.js';
+import { FilePromptContentProvider } from '../contentProviders/filePromptContentsProvider.js';
 import { IInstantiationService } from '../../../../../../platform/instantiation/common/instantiation.js';
-import { FilePromptContentProvider, IFileContentsProviderOptions } from '../contentProviders/filePromptContentsProvider.js';
 
 /**
  * Class capable of parsing prompt syntax out of a provided file,
@@ -17,15 +16,12 @@ import { FilePromptContentProvider, IFileContentsProviderOptions } from '../cont
 export class FilePromptParser extends BasePromptParser<FilePromptContentProvider> {
 	constructor(
 		uri: URI,
-		options: Partial<IFileContentsProviderOptions> = {},
+		seenReferences: string[] = [],
 		@IInstantiationService initService: IInstantiationService,
-		@IWorkspaceContextService workspaceService: IWorkspaceContextService,
 		@ILogService logService: ILogService,
 	) {
-		const contentsProvider = initService.createInstance(FilePromptContentProvider, uri, options);
-		super(contentsProvider, [], initService, workspaceService, logService);
-
-		this._register(contentsProvider);
+		const contentsProvider = initService.createInstance(FilePromptContentProvider, uri);
+		super(contentsProvider, seenReferences, initService, logService);
 	}
 
 	/**

@@ -57,15 +57,12 @@ registerAction2(class extends Action2 {
 	public run(
 		accessor: ServicesAccessor,
 		walkthroughID: string | { category: string; step: string } | undefined,
-		optionsOrToSide: { toSide?: boolean; inactive?: boolean } | boolean | undefined
+		toSide: boolean | undefined
 	) {
 		const editorGroupsService = accessor.get(IEditorGroupsService);
 		const instantiationService = accessor.get(IInstantiationService);
 		const editorService = accessor.get(IEditorService);
 		const commandService = accessor.get(ICommandService);
-
-		const toSide = typeof optionsOrToSide === 'object' ? optionsOrToSide.toSide : optionsOrToSide;
-		const inactive = typeof optionsOrToSide === 'object' ? optionsOrToSide.inactive : false;
 
 		if (walkthroughID) {
 			const selectedCategory = typeof walkthroughID === 'string' ? walkthroughID : walkthroughID.category;
@@ -80,7 +77,7 @@ registerAction2(class extends Action2 {
 			if (!selectedCategory && !selectedStep) {
 				editorService.openEditor({
 					resource: GettingStartedInput.RESOURCE,
-					options: { preserveFocus: toSide ?? false, inactive }
+					options: { preserveFocus: toSide ?? false }
 				}, toSide ? SIDE_GROUP : undefined);
 				return;
 			}
@@ -104,7 +101,7 @@ registerAction2(class extends Action2 {
 						editor.selectedCategory = selectedCategory;
 						editor.selectedStep = selectedStep;
 						editor.showWelcome = false;
-						group.openEditor(editor, { revealIfOpened: true, inactive });
+						group.openEditor(editor, { revealIfOpened: true });
 						return;
 					}
 				}
@@ -127,7 +124,7 @@ registerAction2(class extends Action2 {
 				}]);
 			} else {
 				// else open respecting toSide
-				const options: GettingStartedEditorOptions = { selectedCategory: selectedCategory, selectedStep: selectedStep, showWelcome: false, preserveFocus: toSide ?? false, inactive };
+				const options: GettingStartedEditorOptions = { selectedCategory: selectedCategory, selectedStep: selectedStep, showWelcome: false, preserveFocus: toSide ?? false };
 				editorService.openEditor({
 					resource: GettingStartedInput.RESOURCE,
 					options
@@ -139,7 +136,7 @@ registerAction2(class extends Action2 {
 		} else {
 			editorService.openEditor({
 				resource: GettingStartedInput.RESOURCE,
-				options: { preserveFocus: toSide ?? false, inactive }
+				options: { preserveFocus: toSide ?? false }
 			}, toSide ? SIDE_GROUP : undefined);
 		}
 	}
@@ -236,11 +233,6 @@ registerAction2(class extends Action2 {
 			title: localize2('welcome.showAllWalkthroughs', 'Open Walkthrough...'),
 			category,
 			f1: true,
-			menu: {
-				id: MenuId.MenubarHelpMenu,
-				group: '1_welcome',
-				order: 3,
-			},
 		});
 	}
 
@@ -288,35 +280,6 @@ registerAction2(class extends Action2 {
 		});
 		quickPick.show();
 		quickPick.busy = false;
-	}
-});
-
-
-registerAction2(class extends Action2 {
-	constructor() {
-		super({
-			id: 'welcome.showNewWelcome',
-			title: localize2('welcome.showNewWelcome', 'Open New Welcome Experience'),
-			f1: true,
-		});
-	}
-
-	async run(accessor: ServicesAccessor) {
-		const editorService = accessor.get(IEditorService);
-		const options: GettingStartedEditorOptions = { selectedCategory: 'Setup', showNewExperience: true };
-
-		editorService.openEditor({
-			resource: GettingStartedInput.RESOURCE,
-			options
-		});
-	}
-});
-
-CommandsRegistry.registerCommand({
-	id: 'welcome.newWorkspaceChat',
-	handler: (accessor, stepID: string) => {
-		const commandService = accessor.get(ICommandService);
-		commandService.executeCommand('workbench.action.chat.open', { mode: 'agent', query: '#new ', isPartialQuery: true });
 	}
 });
 

@@ -157,7 +157,6 @@ export class InlineChatWidget {
 					}
 					return true;
 				},
-				dndContainer: this._elements.root,
 				..._options.chatWidgetViewOptions
 			},
 			{

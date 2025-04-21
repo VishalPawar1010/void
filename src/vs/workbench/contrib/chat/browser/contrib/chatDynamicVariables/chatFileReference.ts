@@ -9,7 +9,6 @@ import { IDynamicVariable } from '../../../common/chatVariables.js';
 import { IRange } from '../../../../../../editor/common/core/range.js';
 import { ILogService } from '../../../../../../platform/log/common/log.js';
 import { FilePromptParser } from '../../../common/promptSyntax/parsers/filePromptParser.js';
-import { IWorkspaceContextService } from '../../../../../../platform/workspace/common/workspace.js';
 import { IInstantiationService } from '../../../../../../platform/instantiation/common/instantiation.js';
 
 /**
@@ -24,7 +23,6 @@ export class ChatFileReference extends FilePromptParser implements IDynamicVaria
 	constructor(
 		public readonly reference: IDynamicVariable,
 		@IInstantiationService initService: IInstantiationService,
-		@IWorkspaceContextService workspaceService: IWorkspaceContextService,
 		@ILogService logService: ILogService,
 	) {
 		const { data } = reference;
@@ -34,7 +32,7 @@ export class ChatFileReference extends FilePromptParser implements IDynamicVaria
 			`Variable data must be an URI, got '${data}'.`,
 		);
 
-		super(data, {}, initService, workspaceService, logService);
+		super(data, [], initService, logService);
 	}
 
 	/**
@@ -57,6 +55,10 @@ export class ChatFileReference extends FilePromptParser implements IDynamicVaria
 
 	public get data(): URI {
 		return this.uri;
+	}
+
+	public get prefix() {
+		return this.reference.prefix;
 	}
 
 	public get isFile() {

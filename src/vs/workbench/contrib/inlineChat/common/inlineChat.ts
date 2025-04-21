@@ -18,8 +18,7 @@ export const enum InlineChatConfigKeys {
 	HoldToSpeech = 'inlineChat.holdToSpeech',
 	AccessibleDiffView = 'inlineChat.accessibleDiffView',
 	LineEmptyHint = 'inlineChat.lineEmptyHint',
-	LineNLHint = 'inlineChat.lineNaturalLanguageHint',
-	EnableV2 = 'inlineChat.enableV2'
+	LineNLHint = 'inlineChat.lineNaturalLanguageHint'
 }
 
 Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration({
@@ -57,12 +56,6 @@ Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfigurat
 			default: true,
 			type: 'boolean',
 			tags: ['experimental'],
-		},
-		[InlineChatConfigKeys.EnableV2]: {
-			description: localize('enableV2', "Whether to use the next version of inline chat."),
-			default: false,
-			type: 'boolean',
-			tags: ['preview', 'onExp'],
 		},
 	}
 });
@@ -112,8 +105,6 @@ export const ACTION_REPORT_ISSUE = 'inlineChat.reportIssue';
 export const MENU_INLINE_CHAT_WIDGET_STATUS = MenuId.for('inlineChatWidget.status');
 export const MENU_INLINE_CHAT_WIDGET_SECONDARY = MenuId.for('inlineChatWidget.secondary');
 export const MENU_INLINE_CHAT_ZONE = MenuId.for('inlineChatWidget.changesZone');
-
-export const MENU_INLINE_CHAT_SIDE = MenuId.for('inlineChatWidget.side');
 
 // --- colors
 

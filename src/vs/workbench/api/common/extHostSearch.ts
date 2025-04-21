@@ -176,7 +176,7 @@ export class ExtHostSearch implements IExtHostSearch {
 
 		const query = reviveQuery(rawQuery);
 		const engine = this.createAITextSearchManager(query, provider);
-		return engine.search(progress => this._proxy.$handleTextMatch(handle, session, progress), token, result => this._proxy.$handleKeywordResult(handle, session, result));
+		return engine.search(progress => this._proxy.$handleTextMatch(handle, session, progress), token);
 	}
 
 	$enableExtensionHostSearch(): void { }

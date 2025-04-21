@@ -16,7 +16,7 @@ import type { ICompletionResource } from '../types';
 import { osIsWindows } from '../helpers/os';
 import { removeAnyFileExtension } from '../helpers/file';
 import type { EnvironmentVariable } from './api-bindings/types';
-import { asArray, availableSpecs } from '../terminalSuggestMain';
+import { asArray } from '../terminalSuggestMain';
 import { IFigExecuteExternals } from './execute';
 
 export interface IFigSpecSuggestionsResult {
@@ -52,10 +52,11 @@ export async function getFigSuggestions(
 		if (!specLabels) {
 			continue;
 		}
+
 		for (const specLabel of specLabels) {
 			const availableCommand = (osIsWindows()
 				? availableCommands.find(command => (typeof command.label === 'string' ? command.label : command.label.label).match(new RegExp(`${specLabel}(\\.[^ ]+)?$`)))
-				: availableCommands.find(command => (typeof command.label === 'string' ? command.label : command.label.label) === (specLabel)));
+				: availableCommands.find(command => (typeof command.label === 'string' ? command.label : command.label.label).startsWith(specLabel)));
 			if (!availableCommand || (token && token.isCancellationRequested)) {
 				continue;
 			}
@@ -80,20 +81,17 @@ export async function getFigSuggestions(
 
 			const commandAndAliases = (osIsWindows()
 				? availableCommands.filter(command => specLabel === removeAnyFileExtension(command.definitionCommand ?? (typeof command.label === 'string' ? command.label : command.label.label)))
-				: availableCommands.filter(command => specLabel === (command.definitionCommand ?? (typeof command.label === 'string' ? command.label : command.label.label))));
+				: availableCommands.filter(command => specLabel === (command.definitionCommand ?? command.label)));
 			if (
 				!(osIsWindows()
 					? commandAndAliases.some(e => precedingText.startsWith(`${removeAnyFileExtension((typeof e.label === 'string' ? e.label : e.label.label))} `))
-					: commandAndAliases.some(e => precedingText.startsWith(`${typeof e.label === 'string' ? e.label : e.label.label} `)))
+					: commandAndAliases.some(e => precedingText.startsWith(`${e.label} `)))
 			) {
+				// the spec label is not the first word in the command line, so do not provide options or args
 				continue;
 			}
 
-			const actualSpec = availableCommand.definitionCommand ? availableSpecs.find(s => s.name === availableCommand.definitionCommand) : spec;
-			if (!actualSpec) {
-				continue;
-			}
-			const completionItemResult = await getFigSpecSuggestions(actualSpec, terminalContext, prefix, shellIntegrationCwd, env, name, executeExternals, token);
+			const completionItemResult = await getFigSpecSuggestions(spec, terminalContext, prefix, shellIntegrationCwd, env, name, executeExternals, token);
 			result.hasCurrentArg ||= !!completionItemResult?.hasCurrentArg;
 			if (completionItemResult) {
 				result.filesRequested ||= completionItemResult.filesRequested;
@@ -133,7 +131,7 @@ async function getFigSpecSuggestions(
 		currentProcess: name,
 		// TODO: pass in aliases
 	};
-	const parsedArguments: ArgumentParserResult = await parseArguments(command, shellContext, spec, executeExternals);
+	const parsedArguments: ArgumentParserResult = await parseArguments(command, shellContext, spec);
 
 	const items: vscode.TerminalCompletionItem[] = [];
 	// TODO: Pass in and respect cancellation token
@@ -275,30 +273,11 @@ export async function collectCompletionItemResult(
 				itemKind = vscode.TerminalCompletionItemKind.OptionValue;
 			}
 
-			// Add <argName> for every argument
-			let detail: string | undefined;
-			if (typeof item === 'object' && 'args' in item) {
-				const args = asArray(item.args);
-				if (args.every(e => !!e?.name)) {
-					if (args.length > 0) {
-						detail = ' ' + args.map(e => {
-							let result = `<${e!.name}>`;
-							if (e?.isOptional) {
-								result = `[${result}]`;
-							}
-							return result;
-						}).join(' ');
-					}
-				}
-			}
-
 			items.push(
 				createCompletionItem(
 					terminalContext.cursorPosition,
 					prefix,
-					{
-						label: detail ? { label, detail } : label
-					},
+					{ label },
 					undefined,
 					typeof item === 'string' ? item : item.description,
 					itemKind,

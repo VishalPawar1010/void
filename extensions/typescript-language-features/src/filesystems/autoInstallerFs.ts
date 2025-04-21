@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { PackageManager, ResolvedProject } from '@vscode/ts-package-manager';
+import { PackageManager } from '@vscode/ts-package-manager';
 import { basename, join } from 'path';
 import * as vscode from 'vscode';
 import { URI } from 'vscode-uri';
@@ -161,18 +161,12 @@ export class AutoInstallerFs extends Disposable implements vscode.FileSystemProv
 		}
 
 		const installing = (async () => {
-			let proj: ResolvedProject;
-			try {
-				proj = await this.packageManager.resolveProject(root, await this.getInstallOpts(incomingUri.original, root));
-			} catch (e) {
-				console.error(`failed to resolve project at ${incomingUri.path}: `, e);
-				return;
-			}
-
+			const proj = await this.packageManager.resolveProject(root, await this.getInstallOpts(incomingUri.original, root));
 			try {
 				await proj.restore();
 			} catch (e) {
 				console.error(`failed to restore package at ${incomingUri.path}: `, e);
+				throw e;
 			}
 		})();
 		this._projectCache.set(root, installing);

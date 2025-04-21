@@ -329,23 +329,16 @@ export function isWorkspaceFolder(thing: unknown): thing is IWorkspaceFolder {
 
 export class Workspace implements IWorkspace {
 
-	private foldersMap: TernarySearchTree<URI, WorkspaceFolder>;
-
+	private _foldersMap: TernarySearchTree<URI, WorkspaceFolder> = TernarySearchTree.forUris<WorkspaceFolder>(this._ignorePathCasing, () => true);
 	private _folders!: WorkspaceFolder[];
-	get folders(): WorkspaceFolder[] { return this._folders; }
-	set folders(folders: WorkspaceFolder[]) {
-		this._folders = folders;
-		this.updateFoldersMap();
-	}
 
 	constructor(
 		private _id: string,
 		folders: WorkspaceFolder[],
 		private _transient: boolean,
 		private _configuration: URI | null,
-		private ignorePathCasing: (key: URI) => boolean,
+		private _ignorePathCasing: (key: URI) => boolean,
 	) {
-		this.foldersMap = TernarySearchTree.forUris<WorkspaceFolder>(this.ignorePathCasing, () => true);
 		this.folders = folders;
 	}
 
@@ -353,8 +346,17 @@ export class Workspace implements IWorkspace {
 		this._id = workspace.id;
 		this._configuration = workspace.configuration;
 		this._transient = workspace.transient;
-		this.ignorePathCasing = workspace.ignorePathCasing;
+		this._ignorePathCasing = workspace._ignorePathCasing;
 		this.folders = workspace.folders;
+	}
+
+	get folders(): WorkspaceFolder[] {
+		return this._folders;
+	}
+
+	set folders(folders: WorkspaceFolder[]) {
+		this._folders = folders;
+		this.updateFoldersMap();
 	}
 
 	get id(): string {
@@ -378,13 +380,13 @@ export class Workspace implements IWorkspace {
 			return null;
 		}
 
-		return this.foldersMap.findSubstr(resource) || null;
+		return this._foldersMap.findSubstr(resource) || null;
 	}
 
 	private updateFoldersMap(): void {
-		this.foldersMap = TernarySearchTree.forUris<WorkspaceFolder>(this.ignorePathCasing, () => true);
+		this._foldersMap = TernarySearchTree.forUris<WorkspaceFolder>(this._ignorePathCasing, () => true);
 		for (const folder of this.folders) {
-			this.foldersMap.set(folder.uri, folder);
+			this._foldersMap.set(folder.uri, folder);
 		}
 	}
 

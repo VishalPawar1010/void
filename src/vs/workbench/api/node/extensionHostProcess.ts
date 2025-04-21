@@ -103,10 +103,9 @@ function patchProcess(allowExit: boolean) {
 
 	process.on = <any>function (event: string, listener: (...args: any[]) => void) {
 		if (event === 'uncaughtException') {
-			const actualListener = listener;
-			listener = function (...args: any[]) {
+			listener = function () {
 				try {
-					return actualListener.apply(undefined, args);
+					return listener.call(undefined, arguments);
 				} catch {
 					// DO NOT HANDLE NOR PRINT the error here because this can and will lead to
 					// more errors which will cause error handling to be reentrant and eventually

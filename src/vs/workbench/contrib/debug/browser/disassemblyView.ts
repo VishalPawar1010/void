@@ -6,7 +6,7 @@
 import { PixelRatio } from '../../../../base/browser/pixelRatio.js';
 import { $, Dimension, addStandardDisposableListener, append } from '../../../../base/browser/dom.js';
 import { IListAccessibilityProvider } from '../../../../base/browser/ui/list/listWidget.js';
-import { ITableContextMenuEvent, ITableRenderer, ITableVirtualDelegate } from '../../../../base/browser/ui/table/table.js';
+import { ITableRenderer, ITableVirtualDelegate } from '../../../../base/browser/ui/table/table.js';
 import { binarySearch2 } from '../../../../base/common/arrays.js';
 import { Color } from '../../../../base/common/color.js';
 import { Emitter } from '../../../../base/common/event.js';
@@ -25,7 +25,7 @@ import { localize } from '../../../../nls.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { TextEditorSelectionRevealType } from '../../../../platform/editor/common/editor.js';
-import { IInstantiationService, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { WorkbenchTable } from '../../../../platform/list/browser/listService.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
@@ -43,14 +43,8 @@ import { getUriFromSource } from '../common/debugSource.js';
 import { isUri, sourcesEqual } from '../common/debugUtils.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
-import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
-import { IMenu, IMenuService, MenuId } from '../../../../platform/actions/common/actions.js';
-import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
-import { COPY_ADDRESS_ID, COPY_ADDRESS_LABEL } from '../../../../workbench/contrib/debug/browser/debugCommands.js';
-import { IClipboardService } from '../../../../platform/clipboard/common/clipboardService.js';
-import { getFlatContextMenuActions } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 
-export interface IDisassembledInstructionEntry {
+interface IDisassembledInstructionEntry {
 	allowBreakpoint: boolean;
 	isBreakpointSet: boolean;
 	isBreakpointEnabled: boolean;
@@ -67,6 +61,7 @@ export interface IDisassembledInstructionEntry {
 	/** Parsed instruction address */
 	address: bigint;
 }
+
 
 // Special entry as a placeholer when disassembly is not available
 const disassemblyNotAvailable: IDisassembledInstructionEntry = {
@@ -96,7 +91,6 @@ export class DisassemblyView extends EditorPane {
 	private _enableSourceCodeRender: boolean = true;
 	private _loadingLock: boolean = false;
 	private readonly _referenceToMemoryAddress = new Map<string, bigint>();
-	private menu: IMenu;
 
 	constructor(
 		group: IEditorGroup,
@@ -106,14 +100,9 @@ export class DisassemblyView extends EditorPane {
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@IDebugService private readonly _debugService: IDebugService,
-		@IContextMenuService private readonly _contextMenuService: IContextMenuService,
-		@IMenuService menuService: IMenuService,
-		@IContextKeyService contextKeyService: IContextKeyService,
 	) {
 		super(DISASSEMBLY_VIEW_ID, group, telemetryService, themeService, storageService);
 
-		this.menu = menuService.createMenu(MenuId.DebugDisassemblyContext, contextKeyService);
-		this._register(this.menu);
 		this._disassembledInstructions = undefined;
 		this._onDidChangeStackFrame = this._register(new Emitter<void>({ leakWarningThreshold: 1000 }));
 		this._previousDebuggingState = _debugService.state;
@@ -191,10 +180,6 @@ export class DisassemblyView extends EditorPane {
 			return undefined;
 		}
 
-		return this.getAddressAndOffset(element);
-	}
-
-	getAddressAndOffset(element: IDisassembledInstructionEntry) {
 		const reference = element.instructionReference;
 		const offset = Number(element.address - this.getReferenceAddress(reference)!);
 		return { reference, offset, address: element.address };
@@ -287,8 +272,6 @@ export class DisassemblyView extends EditorPane {
 				this.scrollDown_LoadDisassembledInstructions(DisassemblyView.NUM_INSTRUCTIONS_TO_LOAD).then(() => { this._loadingLock = false; });
 			}
 		}));
-
-		this._register(this._disassembledInstructions.onContextMenu(e => this.onContextMenu(e)));
 
 		this._register(this._debugService.getViewModel().onDidFocusStackFrame(({ stackFrame }) => {
 			if (this._disassembledInstructions && stackFrame?.instructionPointerReference) {
@@ -650,15 +633,6 @@ export class DisassemblyView extends EditorPane {
 		this._referenceToMemoryAddress.clear();
 		this._disassembledInstructions?.splice(0, this._disassembledInstructions.length, [disassemblyNotAvailable]);
 	}
-
-	private onContextMenu(e: ITableContextMenuEvent<IDisassembledInstructionEntry>): void {
-		const actions = getFlatContextMenuActions(this.menu.getActions({ shouldForwardArgs: true }));
-		this._contextMenuService.showContextMenu({
-			getAnchor: () => e.anchor,
-			getActions: () => actions,
-			getActionsContext: () => e.element
-		});
-	}
 }
 
 interface IBreakpointColumnTemplateData {
@@ -801,8 +775,8 @@ class InstructionRenderer extends Disposable implements ITableRenderer<IDisassem
 		this._focusedStackFrameColor = themeService.getColorTheme().getColor(focusedStackFrameColor);
 
 		this._register(themeService.onDidColorThemeChange(e => {
-			this._topStackFrameColor = e.getColor(topStackFrameColor);
-			this._focusedStackFrameColor = e.getColor(focusedStackFrameColor);
+			this._topStackFrameColor = e.theme.getColor(topStackFrameColor);
+			this._focusedStackFrameColor = e.theme.getColor(focusedStackFrameColor);
 		}));
 	}
 
@@ -1032,16 +1006,3 @@ export class DisassemblyViewContribution implements IWorkbenchContribution {
 		this._onDidChangeModelLanguage?.dispose();
 	}
 }
-
-CommandsRegistry.registerCommand({
-	metadata: {
-		description: COPY_ADDRESS_LABEL,
-	},
-	id: COPY_ADDRESS_ID,
-	handler: async (accessor: ServicesAccessor, entry?: IDisassembledInstructionEntry) => {
-		if (entry?.instruction?.address) {
-			const clipboardService = accessor.get(IClipboardService);
-			clipboardService.writeText(entry.instruction.address);
-		}
-	}
-});
