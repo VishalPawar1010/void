@@ -20,7 +20,7 @@ type RefreshableState = ({
 	timeoutId: null,
 } | {
 	state: 'refreshing',
-	timeoutId: NodeJS.Timeout | null, // the timeoutId of the most recent call to refreshModels
+	timeoutId: number | null, // the timeoutId of the most recent call to refreshModels (platform-agnostic)
 } | {
 	state: 'finished',
 	timeoutId: null,

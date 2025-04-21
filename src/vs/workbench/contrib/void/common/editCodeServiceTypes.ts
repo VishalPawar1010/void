@@ -51,7 +51,8 @@ export type CtrlKZone = {
 
 	// _ means anything we don't include if we clone it
 	_mountInfo: null | {
-		textAreaRef: { current: HTMLTextAreaElement | null }
+		// textAreaRef: { current: HTMLTextAreaElement | null } // REMOVED: forbidden in common layer
+// Use a platform-agnostic abstraction or interface for textarea reference.
 		dispose: () => void;
 		refresh: () => void;
 	}

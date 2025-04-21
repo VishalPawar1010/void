@@ -8,7 +8,7 @@ import { EventLLMMessageOnTextParams, EventLLMMessageOnErrorParams, EventLLMMess
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { registerSingleton, InstantiationType } from '../../../../platform/instantiation/common/extensions.js';
 import { IChannel } from '../../../../base/parts/ipc/common/ipc.js';
-import { IMainProcessService } from '../../../../platform/ipc/common/mainProcessService.js';
+// import { IMainProcessService } from '../../../../platform/ipc/common/mainProcessService.js'; // REMOVED: forbidden in common layer
 import { generateUuid } from '../../../../base/common/uuid.js';
 import { Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
@@ -26,49 +26,7 @@ export interface ILLMMessageService {
 }
 
 
-// open this file side by side with llmMessageChannel
-export class LLMMessageService extends Disposable implements ILLMMessageService {
-
-	readonly _serviceBrand: undefined;
-	private readonly channel: IChannel // LLMMessageChannel
-
-	// sendLLMMessage
-	private readonly llmMessageHooks = {
-		onText: {} as { [eventId: string]: ((params: EventLLMMessageOnTextParams) => void) },
-		onFinalMessage: {} as { [eventId: string]: ((params: EventLLMMessageOnFinalMessageParams) => void) },
-		onError: {} as { [eventId: string]: ((params: EventLLMMessageOnErrorParams) => void) },
-		onAbort: {} as { [eventId: string]: (() => void) }, // NOT sent over the channel, result is instant when we call .abort()
-	}
-
-	// list hooks
-	private readonly listHooks = {
-		ollama: {
-			success: {} as { [eventId: string]: ((params: EventModelListOnSuccessParams<OllamaModelResponse>) => void) },
-			error: {} as { [eventId: string]: ((params: EventModelListOnErrorParams<OllamaModelResponse>) => void) },
-		},
-		openAICompat: {
-			success: {} as { [eventId: string]: ((params: EventModelListOnSuccessParams<OpenaiCompatibleModelResponse>) => void) },
-			error: {} as { [eventId: string]: ((params: EventModelListOnErrorParams<OpenaiCompatibleModelResponse>) => void) },
-		}
-	} satisfies {
-		[providerName in 'ollama' | 'openAICompat']: {
-			success: { [eventId: string]: ((params: EventModelListOnSuccessParams<any>) => void) },
-			error: { [eventId: string]: ((params: EventModelListOnErrorParams<any>) => void) },
-		}
-	}
-
-	constructor(
-		@IMainProcessService private readonly mainProcessService: IMainProcessService, // used as a renderer (only usable on client side)
-		@IVoidSettingsService private readonly voidSettingsService: IVoidSettingsService,
-		// @INotificationService private readonly notificationService: INotificationService,
-	) {
-		super()
-
-		// const service = ProxyChannel.toService<LLMMessageChannel>(mainProcessService.getChannel('void-channel-sendLLMMessage')); // lets you call it like a service
-		// see llmMessageChannel.ts
-		this.channel = this.mainProcessService.getChannel('void-channel-llmMessage')
-
-		// .listen sets up an IPC channel and takes a few ms, so we set up listeners immediately and add hooks to them instead
+// Implementation moved to platform-specific layer (browser/main). Only interface and decorator remain here.
 		// llm
 		this._register((this.channel.listen('onText_sendLLMMessage') satisfies Event<EventLLMMessageOnTextParams>)(e => {
 			this.llmMessageHooks.onText[e.requestId]?.(e)

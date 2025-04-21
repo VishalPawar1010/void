@@ -312,10 +312,10 @@ function checkFile(program, sourceFile, rule) {
         }
         const parentSymbol = _parentSymbol;
         const text = parentSymbol.getName();
-        if (rule.allowedTypes?.some(allowed => allowed === text)) {
+        if (rule.allowedTypes && rule.allowedTypes.some(allowed => allowed === text)) {
             return; // override
         }
-        if (rule.disallowedTypes?.some(disallowed => disallowed === text)) {
+        if (rule.disallowedTypes && rule.disallowedTypes.some(disallowed => disallowed === text)) {
             const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
             console.log(`[build/lib/layersChecker.ts]: Reference to type '${text}' violates layer '${rule.target}' (${sourceFile.fileName} (${line + 1},${character + 1}). Learn more about our source code organization at https://github.com/microsoft/vscode/wiki/Source-Code-Organization.`);
             hasErrors = true;
